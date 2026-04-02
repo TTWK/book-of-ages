@@ -11,13 +11,13 @@
     "fastify": "^4.26.2",
     "@fastify/cors": "^8.5.0",
     "@fastify/multipart": "^8.2.0",
-    "better-sqlite3": "^9.4.3",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
     "dayjs": "^1.11.10",
     "uuid": "^9.0.1",
     "@book-of-ages/shared": "*"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.9",
     "@types/node": "^20.11.24",
     "@types/uuid": "^9.0.8",
     "tsx": "^4.7.1",

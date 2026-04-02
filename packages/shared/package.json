@@ -1,5 +1,8 @@
 {
   "name": "@book-of-ages/shared",
   "version": "1.0.0",
-  "main": "src/index.ts"
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc"
+  }
 }

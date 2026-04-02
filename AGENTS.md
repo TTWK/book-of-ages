@@ -1,40 +1,205 @@
-# Book of Ages - AI 开发者规范 (AI Developer Guidelines)
+# AI 开发者规范 (AGENTS.md)
 
-本文档旨在为参与开发《岁月史书 (Book of Ages)》的 AI 助手（如 Gemini, Claude, Cursor 等）提供核心的架构上下文、开发规范与行为准则。在执行任何代码修改前，请务必仔细阅读并遵循以下原则。
+## 项目概述
 
-## 1. 核心架构认知
-- **系统定位**：一个纯净的个人数据底座与 UI 展示端。**系统内部不包含任何大语言模型 (LLM) 的调用和主动分析逻辑**。
-- **工作流**：外部 Agent 负责搜寻和归纳，通过带有 API Key 鉴权的接口将数据推送到本系统（`status='draft'`）；用户在前端 UI 的“收件箱 (Inbox)”中进行审批和收录（转为 `status='confirmed'`）。
-- **极简原则 (YAGNI)**：严禁过度设计。当前版本已明确砍掉复杂的事件版本控制机制（`event_versions`）和带权重的复杂图谱关系。核心目标是打造坚固、高容错的 API 和极速的录入/审批体验。
+**岁月史书 (Book of Ages)** - 个人事件记录与管理系统
 
-## 2. 开发与编码规范
+- **定位**: AI 友好的 Headless CMS，作为"纯净数据底座"
+- **核心流程**: 外部 Agent 推送草稿 → 人工审批收录 → 正式事件库
+- **原则**: YAGNI (You Aren't Gonna Need It)，保持简单实用
 
-### 2.1 测试驱动开发 (TDD)
-- **强制要求**：在编写或修改核心业务逻辑（尤其是后端 API 路由、服务层逻辑、数据库操作）之前，**必须先编写测试用例**。
-- **测试先行**：如果是修复 Bug，确保测试用例能够准确复现 Bug（即测试运行失败）；如果是新功能，确保测试定义了明确的输入输出边界。然后再编写实现代码让测试通过。
-- **测试框架**：
-  - **后端 (Fastify)**：使用 `vitest` 以及 Fastify 实例自带的 `.inject()` 方法进行接口级的集成测试和单元测试，确保不依赖外部环境也能验证业务逻辑。
-  - **前端 (Vue 3)**：使用 `vitest` 结合 `@vue/test-utils` 进行组件逻辑和状态管理的测试。
+## 技术栈
 
-### 2.2 优先复用与改造老代码 (DRY)
-- **禁止无脑重建**：在实现新功能或修复 Bug 前，**必须先进行全局检索**，查找是否已有功能相似的函数、UI 组件或 TypeScript 类型定义。
-- **改造优于重写**：优先扩展、抽象或重构现有的工具函数和组件，而不是贪图省事直接复制粘贴或新写一个同名/类似的新函数。保持代码库的 DRY（Don't Repeat Yourself）原则。
+| 层级 | 技术 |
+|------|------|
+| 前端 | Vue 3 + Vite + Naive UI + Pinia |
+| 后端 | Fastify (TypeScript) |
+| 存储 | SQLite (sqlite3) |
+| 共享 | TypeScript 类型定义 |
 
-### 2.3 代码质量与自审 (Code Review)
-- **自我验证 (Self-Review)**：在完成一个功能模块的代码编写后，不要急于声明任务完成。必须先运行现有的静态检查工具（如 `tsc --noEmit`, `eslint`, `prettier`）和测试集，确保没有任何语法错误、类型警告或破坏性变更。
-- **边界覆盖**：回顾原始需求，确保所有的边缘情况（Edge Cases）、异常流（如网络超时、无效参数）都已在代码实现中被优雅地处理，并在测试中被覆盖。
-- **类型安全**：前后端均使用 TypeScript。严禁使用 `any` 或 `@ts-ignore` 绕过类型检查（除非极少数极难推导的泛型边界情况，且必须在代码旁添加详细的注释说明理由）。
+## 项目结构
 
-## 3. Git 提交规范
-- **小步提交**：将复杂的任务拆解为多个小的、逻辑高内聚的 commit。坚决避免在一个 commit 中混合多个无关的业务修改或大规模的代码格式化操作。
-- **语义化信息 (Conventional Commits)**：遵循语义化提交规范，明确动作意图。例如：
-  - `feat: [模块] 新增了...功能`
-  - `fix: [模块] 修复了...导致的 bug`
-  - `refactor: [模块] 重构了...以提升复用性`
-  - `test: [模块] 补充了...的测试用例`
-  - `docs: [模块] 更新了...文档`
-- **提交前确认**：在执行 `git commit` 前，必须通过命令回顾暂存区的内容，绝不提交包含调试代码（如 `console.log`, `debugger`）的脏代码。
+```
+book-of-ages/
+├── packages/
+│   ├── web/                 # 前端 (Vue 3, Naive UI)
+│   │   ├── src/
+│   │   │   ├── api/         # API 客户端封装
+│   │   │   ├── components/  # 通用组件
+│   │   │   ├── views/       # 页面视图
+│   │   │   ├── router/      # 路由配置
+│   │   │   └── stores/      # Pinia 状态管理
+│   ├── server/              # 后端 (Fastify, SQLite)
+│   │   ├── src/
+│   │   │   ├── db/          # 数据库连接和工具
+│   │   │   ├── routes/      # API 路由
+│   │   │   ├── services/    # 业务逻辑
+│   │   │   └── middleware/  # 中间件
+│   └── shared/              # 共享类型定义
+├── data/                    # 数据目录 (SQLite 数据库)
+└── docs/                    # 项目文档
+```
 
-## 4. 特殊业务逻辑要求
-- **API 错误处理**：由于本系统主要面向外部自动化 Agent（如 Python 爬虫），后端的错误信息必须极其清晰、规范。所有的错误响应需包含明确的业务错误码（Code）和直白的提示信息（Message），确保外部脚本能够据此实现精准的错误分类与重试机制。
-- **URL 解析容错**：在开发或维护 `/api/tools/parse-url` 这类涉及外部请求的接口时，需充分考虑到外部网页结构的不可控性。务必做好全方位的异常捕获（请求超时、反爬拦截、非 HTML 内容等），保证核心 API 服务的稳定性。
+## 开发规范
+
+### 1. 代码风格
+
+- **TypeScript**: 严格模式，所有函数参数和返回值必须标注类型
+- **命名规范**:
+  - 文件/目录：kebab-case (如 `eventService.ts`)
+  - 类/组件：PascalCase (如 `EventView.vue`)
+  - 函数/变量：camelCase (如 `createEvent`)
+  - 常量：UPPER_SNAKE_CASE (如 `API_BASE_URL`)
+- **异步处理**: 使用 async/await，避免 Promise 链
+
+### 2. API 设计规范
+
+- **响应格式**: 统一使用标准格式
+
+  ```json
+  {
+    "success": true,
+    "data": { ... }
+  }
+  ```
+
+- **错误处理**: 包含错误码和消息
+
+  ```json
+  {
+    "success": false,
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "标题不能为空"
+    }
+  }
+  ```
+
+- **鉴权**: 外部 Agent 调用需在请求头携带 `X-API-Key`
+
+### 3. 数据库规范
+
+- **表名**: 复数形式，小写，下划线分隔 (如 `event_tags`)
+- **字段**:
+  - `id`: TEXT (UUID)
+  - `created_at`, `updated_at`: DATETIME (ISO 字符串)
+  - `deleted_at`: DATETIME (软删除标记)
+- **状态字段**: 使用 CHECK 约束限制枚举值
+
+### 4. 前端规范
+
+- **组件**: 使用 Composition API (`<script setup>`)
+- **状态管理**: 使用 Pinia
+- **HTTP 请求**: 统一使用 `src/api/client.ts` 封装的 apiClient
+- **UI 组件库**: Naive UI，保持设计一致性
+
+### 5. 提交规范
+
+- **格式**: `<type>: <description>`
+- **类型**:
+  - `feat`: 新功能
+  - `fix`: Bug 修复
+  - `refactor`: 重构
+  - `docs`: 文档更新
+  - `chore`: 构建/工具配置
+
+## 快速开始
+
+### 环境要求
+
+- Node.js >= 20
+- npm >= 9
+
+### 安装依赖
+
+```bash
+npm install
+```
+
+### 开发模式
+
+```bash
+# 启动后端 (端口 3000)
+npm run dev:server
+
+# 启动前端 (端口 5173)
+npm run dev:web
+```
+
+### 构建
+
+```bash
+npm run build
+```
+
+## 核心 API
+
+### 事件管理
+
+```bash
+# 获取事件列表 (收件箱)
+GET /api/events?status=draft
+
+# 创建事件
+POST /api/events
+{
+  "title": "事件标题",
+  "summary": "摘要",
+  "content": "详细内容",
+  "status": "draft"
+}
+
+# 收录事件 (审批通过)
+PUT /api/events/:id
+{
+  "status": "confirmed"
+}
+```
+
+### API Key 管理
+
+```bash
+# 生成新的 API Key
+POST /api/settings/keys
+{
+  "name": "Daily Crawler Agent"
+}
+
+# 使用 API Key 调用
+curl -H "X-API-Key: boa_xxx" http://localhost:3000/api/events
+```
+
+## 当前阶段
+
+**Phase 1: 核心中台与 API** ✅ 已完成
+
+- [x] 数据库模型和初始化
+- [x] 事件 CRUD API
+- [x] 标签 CRUD API
+- [x] API Key 鉴权
+- [x] 操作日志
+- [x] 前端基础框架
+
+## 下一步开发
+
+参考 [docs/roadmap.md](./docs/roadmap.md)
+
+## 常见问题
+
+### Q: 为什么选择 sqlite3 而不是 better-sqlite3？
+
+A: better-sqlite3 需要编译原生模块，在 Windows 上需要 Visual Studio 构建工具，且 Node.js 24 没有预编译二进制文件。sqlite3 虽然性能稍差，但跨平台兼容性更好。
+
+### Q: 如何添加新功能？
+
+A:
+
+1. 在 `packages/shared/src/index.ts` 添加类型定义
+2. 在 `packages/server/src/services/` 实现业务逻辑
+3. 在 `packages/server/src/routes/` 添加 API 路由
+4. 在 `packages/web/src/api/` 添加前端 API 调用
+5. 在 `packages/web/src/views/` 添加页面组件
+
+### Q: 数据库 Schema 变更如何处理？
+
+A: 修改 `packages/server/src/db/schema.ts`，系统会在启动时自动执行新 Schema（使用 CREATE TABLE IF NOT EXISTS，不会破坏现有数据）。

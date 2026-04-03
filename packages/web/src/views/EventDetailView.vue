@@ -205,8 +205,15 @@
         <n-form-item label="内容" path="content">
           <n-input v-model:value="editForm.content" type="textarea" :rows="8" />
         </n-form-item>
+        <n-form-item label="状态" path="status">
+          <n-select v-model:value="editForm.status" :options="[
+            { label: '草稿', value: 'draft' },
+            { label: '已确认', value: 'confirmed' },
+            { label: '已归档', value: 'archived' }
+          ]" />
+        </n-form-item>
         <n-form-item label="日期" path="event_date">
-          <n-date-picker v-model:value="editForm.event_date" />
+          <n-date-picker v-model:value="editForm.event_date" type="date" clearable />
         </n-form-item>
         <n-form-item label="来源链接" path="source_url">
           <n-input v-model:value="editForm.source_url" />
@@ -288,7 +295,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
-import type { Event, Tag, TimelineNode, Material } from '@book-of-ages/shared';
+import type { Event, Tag, TimelineNode, Material, EventStatus } from '@book-of-ages/shared';
 import { getEvent, updateEvent, deleteEvent, getEventTags, updateEventTags } from '../api/eventApi';
 import { getTagList } from '../api/tagApi';
 import { getTimelineNodes, createTimelineNode, updateTimelineNode, deleteTimelineNode } from '../api/timelineApi';
@@ -323,6 +330,7 @@ const editForm = ref({
   content: '',
   event_date: null as number | null,
   source_url: '',
+  status: 'draft' as EventStatus,
 });
 
 const timelineForm = ref({
@@ -408,6 +416,7 @@ async function loadEvent() {
       content: data.content || '',
       event_date: data.event_date ? new Date(data.event_date).getTime() : null,
       source_url: data.source_url || '',
+      status: data.status as EventStatus,
     };
   } catch (error) {
     message.error('加载事件详情失败');

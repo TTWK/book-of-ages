@@ -11,8 +11,7 @@ import { settingsRoutes } from './routes/settings';
 
 const fastify = Fastify({ logger: true });
 
-// 初始化数据库
-initDatabase();
+// 数据库将在 start 函数中初始化
 
 // 注册插件
 fastify.register(authPlugin);
@@ -46,6 +45,7 @@ const start = async () => {
   const port = parseInt(process.env.PORT || '3000', 10);
   
   try {
+    await initDatabase();
     await fastify.listen({ port, host: '0.0.0.0' });
     console.log(`Server running at http://localhost:${port}`);
   } catch (err) {

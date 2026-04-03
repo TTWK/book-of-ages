@@ -20,6 +20,14 @@ export async function getTag(id: string): Promise<Tag> {
 }
 
 /**
+ * 获取标签的事件计数
+ */
+export async function getTagEventCount(tagId: string): Promise<number> {
+  const response = await apiClient.getFullResponse<{ count: number }>(`/api/tags/${tagId}/events/count`);
+  return response.data?.count || 0;
+}
+
+/**
  * 创建标签
  */
 export async function createTag(input: CreateTagInput): Promise<Tag> {

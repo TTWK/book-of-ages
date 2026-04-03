@@ -87,7 +87,7 @@ const formData = ref({
 });
 
 const treeData = computed(() => {
-  const tagMap = new Map<string, TreeOption & { children?: TreeOption[] }>();
+  const tagMap = new Map<string, TreeOption & { children?: TreeOption[]; eventCount?: number }>();
   const roots: TreeOption[] = [];
 
   tags.value.forEach(tag => {
@@ -95,6 +95,7 @@ const treeData = computed(() => {
       id: tag.id,
       name: tag.name,
       color: tag.color,
+      eventCount: (tag as any).eventCount || 0,
       key: tag.id,
       label: tag.name,
       children: [],
@@ -123,13 +124,18 @@ const parentTagOptions = computed(() => {
 });
 
 function renderPrefix(option: TreeOption) {
-  const color = (option as any).color;
-  return h('div', {
-    class: 'w-3 h-3 rounded-full mr-2',
-    style: {
-      backgroundColor: color || '#D1D5DB'
-    }
-  });
+  const tag = option as any;
+  const color = tag.color;
+  
+  return h('div', { class: 'flex items-center mr-2' }, [
+    h('div', {
+      class: 'w-3 h-3 rounded-full',
+      style: { backgroundColor: color || '#D1D5DB' }
+    }),
+    tag.eventCount !== undefined ? h('span', {
+      class: 'ml-2 text-xs text-gray-500'
+    }, `(${tag.eventCount})`) : null
+  ]);
 }
 
 function renderSuffix(option: TreeOption) {

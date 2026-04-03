@@ -50,6 +50,8 @@ export async function searchRoutes(fastify: FastifyInstance): Promise<void> {
       try {
         const results = await simpleSearch(q, {
           type,
+          startDate,
+          endDate,
           limit,
         });
 

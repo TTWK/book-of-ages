@@ -54,7 +54,7 @@
 <script setup lang="ts">
 import { ref, computed, h, onMounted } from 'vue';
 import type { FormRules, FormInst, TreeOption } from 'naive-ui';
-import { NButton, NTag, useMessage } from 'naive-ui';
+import { NButton, NTag, NPopconfirm, useMessage } from 'naive-ui';
 import type { Tag } from '@book-of-ages/shared';
 import { getTagList, createTag, updateTag, deleteTag } from '../api/tagApi';
 
@@ -131,15 +131,31 @@ function renderPrefix(option: TreeOption) {
 
 // 渲染后缀（操作按钮）
 function renderSuffix(option: TreeOption) {
-  return h(NButton, {
-    size: 'tiny',
-    text: true,
-    type: 'primary',
-    onClick: (e: Event) => {
-      e.stopPropagation();
-      handleEdit(option as any);
-    },
-  }, { default: () => '编辑' });
+  const tag = option as any;
+  
+  return h('div', { style: { display: 'flex', gap: '8px' } }, [
+    h(NButton, {
+      size: 'tiny',
+      text: true,
+      type: 'primary',
+      onClick: (e: Event) => {
+        e.stopPropagation();
+        handleEdit(tag);
+      },
+    }, { default: () => '编辑' }),
+    
+    h(NPopconfirm, {
+      onPositiveClick: () => handleDelete(tag),
+    }, {
+      trigger: () => h(NButton, {
+        size: 'tiny',
+        text: true,
+        type: 'error',
+        onClick: (e: Event) => e.stopPropagation(),
+      }, { default: () => '删除' }),
+      default: () => `确定要删除标签"${tag.name}"吗？此操作不可撤销。`,
+    }),
+  ]);
 }
 
 // 打开创建模态框
@@ -188,7 +204,6 @@ async function handleSubmit() {
 }
 
 // 删除标签
-// @ts-ignore
 async function handleDelete(tag: Tag) {
   try {
     await deleteTag(tag.id);

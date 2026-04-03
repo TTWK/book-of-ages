@@ -50,7 +50,78 @@ book-of-ages/
 
 ## 快速开始
 
-（待补充）
+### 环境要求
+
+- Node.js >= 20
+- npm >= 9
+
+### 本地开发
+
+#### 1. 安装依赖
+
+```bash
+npm install
+```
+
+#### 2. 启动开发服务器
+
+```bash
+# 启动后端服务 (端口 3000)
+npm run dev:server
+
+# 启动前端开发服务器 (端口 5173)
+npm run dev:web
+```
+
+访问 http://localhost:5173 即可使用系统。
+
+#### 3. 构建生产版本
+
+```bash
+# 构建所有包
+npm run build
+```
+
+### Docker 部署
+
+#### 使用 Docker Compose (推荐)
+
+```bash
+# 一键启动所有服务
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
+```
+
+启动后访问：
+- 前端：http://localhost
+- 后端 API：http://localhost:3000
+
+数据将持久化保存在 `./data` 目录。
+
+#### 单独构建镜像
+
+```bash
+# 构建后端镜像
+docker build -t book-of-ages-server .
+
+# 构建前端镜像
+docker build -f Dockerfile.web -t book-of-ages-web .
+```
+
+### 数据备份
+
+```bash
+# 备份数据库和媒体文件
+tar -czf book-of-ages-backup.tar.gz ./data
+
+# 恢复备份
+tar -xzf book-of-ages-backup.tar.gz
+```
 
 ## 许可证
 

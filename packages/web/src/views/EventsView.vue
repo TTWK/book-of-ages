@@ -85,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, onMounted } from 'vue';
+import { ref, h, onMounted, computed } from 'vue';
 import type { DataTableColumns, FormRules, FormInst } from 'naive-ui';
 import { NButton, NTag, NText, NSpace, useMessage } from 'naive-ui';
 import type { Event, EventStatus } from '@book-of-ages/shared';
@@ -151,17 +151,21 @@ function openEditModal(event: Event) {
   showEventModal.value = true;
 }
 
-const pagination = {
+const paginationState = {
+  itemCount: 0,
+};
+
+const pagination = computed(() => ({
   page: currentPage.value,
   pageSize: 20,
   showSizePicker: true,
   pageSizes: [10, 20, 50],
-  itemCount: 0,
+  itemCount: paginationState.itemCount,
   onChange: (page: number) => {
     currentPage.value = page;
     loadEvents();
   },
-};
+}));
 
 // 表格列定义
 const columns: DataTableColumns<Event> = [
@@ -234,7 +238,7 @@ async function loadEvents() {
       pageSize: 20,
     });
     events.value = result.items;
-    pagination.itemCount = result.pagination.total;
+    paginationState.itemCount = result.pagination.total;
   } catch (error) {
     message.error('加载事件列表失败');
     console.error(error);

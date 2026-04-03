@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # 后端服务
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: book-of-ages-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # 数据持久化
+      - ./data:/app/data
+      # 媒体文件存储
+      - ./data/media:/app/data/media
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATA_DIR=/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - book-of-ages-network
+
+  # 前端服务
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: book-of-ages-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      server:
+        condition: service_healthy
+    networks:
+      - book-of-ages-network
+
+networks:
+  book-of-ages-network:
+    driver: bridge
+
+volumes:
+  data:
+    driver: local

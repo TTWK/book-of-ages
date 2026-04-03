@@ -26,7 +26,7 @@ export interface EventListResponse {
  * 获取事件列表
  */
 export async function getEventList(params?: EventListParams): Promise<EventListResponse> {
-  const response = await apiClient.get<{
+  const response = await apiClient.getFullResponse<{
     items: Event[];
     pagination: {
       page: number;
@@ -35,7 +35,47 @@ export async function getEventList(params?: EventListParams): Promise<EventListR
       totalPages: number;
     };
   }>('/api/events', params);
-  return response;
+  
+  // 后端返回格式: { success: true, data: { items: [], pagination: {...} } }
+  // 或者: { success: true, data: events[], pagination: {...} }
+  const data = response.data as any;
+  
+  // 如果 data 包含 items 和 pagination
+  if (data && data.items && data.pagination) {
+    return {
+      items: data.items,
+      pagination: data.pagination,
+    };
+  }
+  
+  // 如果 data 是数组（兼容旧格式）
+  if (Array.isArray(data)) {
+    return {
+      items: data,
+      pagination: {
+        page: params?.page || 1,
+        pageSize: params?.pageSize || 20,
+        total: data.length,
+        totalPages: 1,
+      },
+    };
+  }
+  
+  // 如果响应直接包含 items 和 pagination（另一种格式）
+  if (response && (response as any).items && (response as any).pagination) {
+    return response as unknown as EventListResponse;
+  }
+  
+  // 默认返回空列表
+  return {
+    items: [],
+    pagination: {
+      page: params?.page || 1,
+      pageSize: params?.pageSize || 20,
+      total: 0,
+      totalPages: 0,
+    },
+  };
 }
 
 /**

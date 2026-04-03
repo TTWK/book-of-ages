@@ -89,6 +89,14 @@ class ApiClient {
     const response = await this.client.delete<ApiResponse<T>>(url);
     return response.data.data as T;
   }
+
+  /**
+   * GET 请求（返回完整响应）
+   */
+  async getFullResponse<T>(url: string, params?: any): Promise<ApiResponse<T>> {
+    const response = await this.client.get<ApiResponse<T>>(url, { params });
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();

@@ -28,15 +28,20 @@
         <div class="flex items-center space-x-3">
           <div class="relative group">
             <Search class="w-4 h-4 absolute left-2.5 top-2.5 text-gray-400 group-focus-within:text-[#0D9488] transition-colors" />
-            <input 
+            <input
               v-model="searchQuery"
               @keyup.enter="handleSearch"
-              type="text" 
-              placeholder="搜索..." 
+              type="text"
+              placeholder="搜索..."
               class="pl-9 pr-3 py-1.5 w-48 bg-gray-50 border border-transparent focus:border-[#0D9488] focus:bg-white rounded-full text-sm outline-none transition-all duration-200"
             />
           </div>
-          
+
+          <button @click="appStore.toggleTheme()" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer" :title="appStore.isDark ? '切换到浅色模式' : '切换到深色模式'">
+            <Sun v-if="appStore.isDark" class="w-5 h-5" />
+            <Moon v-else class="w-5 h-5" />
+          </button>
+
           <button @click="router.push({ name: 'settings' })" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer">
             <Settings class="w-5 h-5" />
           </button>
@@ -84,7 +89,10 @@
 import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import appRouter from '../router';
-import { BookOpen, Inbox, FileText, Tags, Search, Settings } from 'lucide-vue-next';
+import { BookOpen, Inbox, FileText, Tags, Search, Settings, Sun, Moon } from 'lucide-vue-next';
+import { useAppStore } from '../stores/app';
+
+const appStore = useAppStore()
 
 // Fallback to the imported router instance if the inject context is lost
 const router = useRouter() || appRouter;

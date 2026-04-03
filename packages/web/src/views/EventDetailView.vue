@@ -345,12 +345,13 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
-import { 
-  ArrowLeft, Edit2, Save, Loader2, Calendar, Link, 
-  Trash2, Plus, Hash, GitCommit, Paperclip, Files, 
-  Upload, FileText, Image, File, ExternalLink, X 
+import {
+  ArrowLeft, Edit2, Save, Loader2, Calendar, Link,
+  Trash2, Plus, Hash, GitCommit, Paperclip, Files,
+  Upload, FileText, Image, File, ExternalLink, X
 } from 'lucide-vue-next';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import type { Event, Tag, TimelineNode, Material, EventStatus } from '@book-of-ages/shared';
 import { getEvent, updateEvent, deleteEvent, getEventTags, updateEventTags } from '../api/eventApi';
 import { getTagList } from '../api/tagApi';
@@ -410,7 +411,8 @@ const materialForm = ref({
 
 const renderedContent = computed(() => {
   if (!event.value?.content) return '<p class="text-gray-400 italic">暂无内容详情...</p>';
-  return marked(event.value.content);
+  const html = marked(event.value.content);
+  return DOMPurify.sanitize(html);
 });
 
 const timelineNodeOptions = computed(() => {

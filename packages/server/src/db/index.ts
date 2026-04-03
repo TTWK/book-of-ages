@@ -9,7 +9,7 @@ import fs from 'fs';
 import { schema } from './schema';
 
 let db: Database | null = null;
-const DB_PATH = path.join(process.cwd(), 'data', 'book-of-ages.db');
+const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'book-of-ages.db');
 
 /**
  * 获取数据库实例（单例模式）
@@ -127,6 +127,62 @@ export function all<T>(sql: string, params: unknown[] = []): Promise<T[]> {
         return;
       }
       resolve(rows || []);
+    });
+  });
+}
+
+/**
+ * 运行事务（自动包装 BEGIN/COMMIT/ROLLBACK）
+ * @param queries 要执行的 SQL 查询数组，每个查询包含 sql 和 params
+ * @returns 所有查询的结果数组
+ */
+export async function transaction(
+  queries: Array<{ sql: string; params?: unknown[] }>
+): Promise<Array<{ changes: number }>> {
+  return new Promise((resolve, reject) => {
+    const database = getDatabase();
+
+    // 开始事务
+    database.run('BEGIN TRANSACTION', (err) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      const results: Array<{ changes: number }> = [];
+      let completed = 0;
+
+      const executeNext = (index: number) => {
+        if (index >= queries.length) {
+          // 所有查询完成，提交事务
+          database.run('COMMIT', (commitErr) => {
+            if (commitErr) {
+              // 提交失败，回滚
+              database.run('ROLLBACK', () => {
+                reject(commitErr);
+              });
+              return;
+            }
+            resolve(results);
+          });
+          return;
+        }
+
+        const { sql, params = [] } = queries[index];
+        database.run(sql, params, function (runErr) {
+          if (runErr) {
+            // 查询失败，回滚
+            database.run('ROLLBACK', () => {
+              reject(runErr);
+            });
+            return;
+          }
+          results.push({ changes: this.changes });
+          executeNext(index + 1);
+        });
+      };
+
+      executeNext(0);
     });
   });
 }

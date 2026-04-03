@@ -97,7 +97,22 @@ export async function getEventById(id: string): Promise<Event | null> {
 /**
  * 更新事件
  */
-export async function updateEvent(id: string, input: UpdateEventInput): Promise<Event | null> {
+export async function updateEvent(id: string, input: UpdateEventInput, apiKeyId?: string): Promise<Event | null> {
+  const existingEvent = await getEventById(id);
+  if (!existingEvent) {
+    return null;
+  }
+
+  // 如果事件已确认，且有 API Key 调用（Agent），禁止修改核心字段
+  if (existingEvent.status === 'confirmed' && apiKeyId) {
+    const restrictedFields = ['title', 'summary', 'content', 'event_date', 'source_url'];
+    const hasRestrictedUpdate = restrictedFields.some(field => input[field as keyof UpdateEventInput] !== undefined);
+    
+    if (hasRestrictedUpdate) {
+      throw new Error('PERMISSION_DENIED: 已收录事件的核心字段不允许通过 API 修改');
+    }
+  }
+
   const now = new Date().toISOString();
 
   // 构建动态更新语句

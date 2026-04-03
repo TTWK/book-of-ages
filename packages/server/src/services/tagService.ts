@@ -136,12 +136,13 @@ export async function getEventTags(eventId: string): Promise<Tag[]> {
  * 更新事件的标签
  */
 export async function updateEventTags(eventId: string, tagIds: string[]): Promise<void> {
-  await run(`DELETE FROM event_tags WHERE event_id = ?`, [eventId]);
+  const queries = [
+    { sql: 'DELETE FROM event_tags WHERE event_id = ?', params: [eventId] },
+    ...tagIds.map(tagId => ({
+      sql: 'INSERT OR IGNORE INTO event_tags (event_id, tag_id) VALUES (?, ?)',
+      params: [eventId, tagId]
+    }))
+  ];
 
-  for (const tagId of tagIds) {
-    await run(`
-      INSERT OR IGNORE INTO event_tags (event_id, tag_id)
-      VALUES (?, ?)
-    `, [eventId, tagId]);
-  }
+  await import('../db').then(db => db.transaction(queries));
 }

@@ -44,7 +44,7 @@ export async function simpleSearch(
     try {
       let query = `
         SELECT e.* FROM events e
-        INNER JOIN events_fts fts ON e.id = fts.id
+        INNER JOIN events_fts fts ON e.rowid = fts.rowid
         WHERE e.deleted_at IS NULL
           AND events_fts MATCH ?
       `;
@@ -95,7 +95,7 @@ export async function simpleSearch(
     try {
       let query = `
         SELECT m.* FROM materials m
-        INNER JOIN materials_fts fts ON m.id = fts.id
+        INNER JOIN materials_fts fts ON m.rowid = fts.rowid
         WHERE m.deleted_at IS NULL
           AND materials_fts MATCH ?
       `;
@@ -122,7 +122,7 @@ export async function simpleSearch(
     try {
       let query = `
         SELECT t.* FROM event_timeline_nodes t
-        INNER JOIN timeline_fts fts ON t.id = fts.id
+        INNER JOIN timeline_fts fts ON t.rowid = fts.rowid
         WHERE timeline_fts MATCH ?
       `;
       const params: any[] = [ftsQuery];

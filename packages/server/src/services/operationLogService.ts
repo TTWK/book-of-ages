@@ -57,3 +57,15 @@ export async function getEntityOperationLogs(
     ORDER BY created_at DESC
   `, [entity_type, entity_id]);
 }
+
+/**
+ * 记录 UI 操作日志（用户通过 Web 界面的操作）
+ * 与 logOperation 的区别：明确标记 api_key_id 为 null
+ */
+export async function logUIOperation(
+  action: OperationAction,
+  entity_type: OperationEntityType,
+  entity_id: string
+): Promise<OperationLog> {
+  return logOperation(action, entity_type, entity_id, undefined);
+}

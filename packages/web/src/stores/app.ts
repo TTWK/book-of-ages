@@ -9,6 +9,7 @@ export const useAppStore = defineStore('app', () => {
   // 状态
   const apiKey = ref<string | null>(null);
   const sidebarCollapsed = ref(false);
+  const isDark = ref(false);
 
   // 计算属性
   const isAuthenticated = computed(() => !!apiKey.value);
@@ -35,13 +36,19 @@ export const useAppStore = defineStore('app', () => {
     sidebarCollapsed.value = !sidebarCollapsed.value;
   }
 
+  function toggleTheme() {
+    isDark.value = !isDark.value;
+  }
+
   return {
     apiKey,
     sidebarCollapsed,
+    isDark,
     isAuthenticated,
     setApiKey,
     clearApiKey,
     initApiKey,
     toggleSidebar,
+    toggleTheme,
   };
 });

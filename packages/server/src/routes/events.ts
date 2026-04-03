@@ -18,7 +18,7 @@ import {
   getEventTags,
   updateEventTags,
 } from '../services/tagService';
-import { logOperation } from '../services/operationLogService';
+import { logOperation, logUIOperation } from '../services/operationLogService';
 import {
   createTimelineNode,
   getTimelineNodes,
@@ -421,8 +421,10 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
       const totalPages = Math.ceil(result.total / pageSize);
       reply.send({
         success: true,
-        data: result.events,
-        pagination: { page, pageSize, total: result.total, totalPages },
+        data: {
+          items: result.events,
+          pagination: { page, pageSize, total: result.total, totalPages },
+        },
       });
     }
   );
@@ -436,12 +438,12 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
           type: 'object',
           required: ['title'],
           properties: {
-            title: { type: 'string' },
-            summary: { type: 'string' },
-            content: { type: 'string' },
+            title: { type: 'string', minLength: 1, maxLength: 200 },
+            summary: { type: 'string', maxLength: 1000 },
+            content: { type: 'string', maxLength: 50000 },
             status: { type: 'string', enum: ['draft', 'confirmed', 'archived', 'deleted'] },
             event_date: { type: 'string' },
-            source_url: { type: 'string' },
+            source_url: { type: 'string', maxLength: 2000 },
           },
         },
       },
@@ -452,6 +454,13 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         reply.code(400).send({
           success: false,
           error: { code: 'VALIDATION_ERROR', message: '标题不能为空' },
+        });
+        return;
+      }
+      if (input.title.length > 200) {
+        reply.code(400).send({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: '标题不能超过 200 个字符' },
         });
         return;
       }
@@ -524,16 +533,35 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         });
         return;
       }
-      const updatedEvent = await updateEvent(request.params.id, request.body);
-      if (!updatedEvent) {
-        reply.code(500).send({
-          success: false,
-          error: { code: 'UPDATE_FAILED', message: '更新失败' },
-        });
-        return;
+      try {
+        const updatedEvent = await updateEvent(request.params.id, request.body, request.apiKeyId);
+        if (!updatedEvent) {
+          reply.code(500).send({
+            success: false,
+            error: { code: 'UPDATE_FAILED', message: '更新失败' },
+          });
+          return;
+        }
+        // 区分 API 和 UI 操作
+        if (request.apiKeyId) {
+          await logOperation('UPDATE', 'Event', event.id, request.apiKeyId);
+        } else {
+          await logUIOperation('UPDATE', 'Event', event.id);
+        }
+        reply.send({ success: true, data: updatedEvent });
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith('PERMISSION_DENIED')) {
+          reply.code(403).send({
+            success: false,
+            error: { code: 'PERMISSION_DENIED', message: error.message },
+          });
+        } else {
+          reply.code(500).send({
+            success: false,
+            error: { code: 'UPDATE_FAILED', message: '更新失败' },
+          });
+        }
       }
-      await logOperation('UPDATE', 'Event', event.id, request.apiKeyId);
-      reply.send({ success: true, data: updatedEvent });
     }
   );
 
@@ -557,7 +585,12 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         });
         return;
       }
-      await logOperation('DELETE', 'Event', event.id, request.apiKeyId);
+      // 区分 API 和 UI 操作
+      if (request.apiKeyId) {
+        await logOperation('DELETE', 'Event', event.id, request.apiKeyId);
+      } else {
+        await logUIOperation('DELETE', 'Event', event.id);
+      }
       reply.send({ success: true, data: null });
     }
   );

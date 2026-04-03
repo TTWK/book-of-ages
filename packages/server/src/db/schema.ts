@@ -93,25 +93,22 @@ CREATE TABLE IF NOT EXISTS operation_logs (
 
 -- events 全文搜索
 CREATE VIRTUAL TABLE IF NOT EXISTS events_fts USING fts5(
-    id,
-    title, 
-    summary, 
+    title,
+    summary,
     content,
     content='events'
 );
 
 -- materials 全文搜索
 CREATE VIRTUAL TABLE IF NOT EXISTS materials_fts USING fts5(
-    id,
-    title, 
+    title,
     content_text,
     content='materials'
 );
 
 -- timeline 全文搜索
 CREATE VIRTUAL TABLE IF NOT EXISTS timeline_fts USING fts5(
-    id,
-    title, 
+    title,
     description,
     content='event_timeline_nodes'
 );
@@ -120,56 +117,56 @@ CREATE VIRTUAL TABLE IF NOT EXISTS timeline_fts USING fts5(
 
 -- Events FTS 触发器
 CREATE TRIGGER IF NOT EXISTS events_ai AFTER INSERT ON events BEGIN
-    INSERT INTO events_fts(id, title, summary, content) 
-    VALUES (new.id, new.title, new.summary, new.content);
+    INSERT INTO events_fts(rowid, title, summary, content)
+    VALUES (new.rowid, new.title, new.summary, new.content);
 END;
 
 CREATE TRIGGER IF NOT EXISTS events_ad AFTER DELETE ON events BEGIN
-    INSERT INTO events_fts(events_fts, id, title, summary, content) 
-    VALUES('delete', old.id, old.title, old.summary, old.content);
+    INSERT INTO events_fts(events_fts, rowid, title, summary, content)
+    VALUES('delete', old.rowid, old.title, old.summary, old.content);
 END;
 
 CREATE TRIGGER IF NOT EXISTS events_au AFTER UPDATE ON events BEGIN
-    INSERT INTO events_fts(events_fts, id, title, summary, content) 
-    VALUES('delete', old.id, old.title, old.summary, old.content);
-    INSERT INTO events_fts(id, title, summary, content) 
-    VALUES (new.id, new.title, new.summary, new.content);
+    INSERT INTO events_fts(events_fts, rowid, title, summary, content)
+    VALUES('delete', old.rowid, old.title, old.summary, old.content);
+    INSERT INTO events_fts(rowid, title, summary, content)
+    VALUES (new.rowid, new.title, new.summary, new.content);
 END;
 
 -- Materials FTS 触发器
 CREATE TRIGGER IF NOT EXISTS materials_ai AFTER INSERT ON materials BEGIN
-    INSERT INTO materials_fts(id, title, content_text) 
-    VALUES (new.id, new.title, new.content_text);
+    INSERT INTO materials_fts(rowid, title, content_text)
+    VALUES (new.rowid, new.title, new.content_text);
 END;
 
 CREATE TRIGGER IF NOT EXISTS materials_ad AFTER DELETE ON materials BEGIN
-    INSERT INTO materials_fts(materials_fts, id, title, content_text) 
-    VALUES('delete', old.id, old.title, old.content_text);
+    INSERT INTO materials_fts(materials_fts, rowid, title, content_text)
+    VALUES('delete', old.rowid, old.title, old.content_text);
 END;
 
 CREATE TRIGGER IF NOT EXISTS materials_au AFTER UPDATE ON materials BEGIN
-    INSERT INTO materials_fts(materials_fts, id, title, content_text) 
-    VALUES('delete', old.id, old.title, old.content_text);
-    INSERT INTO materials_fts(id, title, content_text) 
-    VALUES (new.id, new.title, new.content_text);
+    INSERT INTO materials_fts(materials_fts, rowid, title, content_text)
+    VALUES('delete', old.rowid, old.title, old.content_text);
+    INSERT INTO materials_fts(rowid, title, content_text)
+    VALUES (new.rowid, new.title, new.content_text);
 END;
 
 -- Timeline FTS 触发器
 CREATE TRIGGER IF NOT EXISTS timeline_ai AFTER INSERT ON event_timeline_nodes BEGIN
-    INSERT INTO timeline_fts(id, title, description) 
-    VALUES (new.id, new.title, new.description);
+    INSERT INTO timeline_fts(rowid, title, description)
+    VALUES (new.rowid, new.title, new.description);
 END;
 
 CREATE TRIGGER IF NOT EXISTS timeline_ad AFTER DELETE ON event_timeline_nodes BEGIN
-    INSERT INTO timeline_fts(timeline_fts, id, title, description) 
-    VALUES('delete', old.id, old.title, old.description);
+    INSERT INTO timeline_fts(timeline_fts, rowid, title, description)
+    VALUES('delete', old.rowid, old.title, old.description);
 END;
 
 CREATE TRIGGER IF NOT EXISTS timeline_au AFTER UPDATE ON event_timeline_nodes BEGIN
-    INSERT INTO timeline_fts(timeline_fts, id, title, description) 
-    VALUES('delete', old.id, old.title, old.description);
-    INSERT INTO timeline_fts(id, title, description) 
-    VALUES (new.id, new.title, new.description);
+    INSERT INTO timeline_fts(timeline_fts, rowid, title, description)
+    VALUES('delete', old.rowid, old.title, old.description);
+    INSERT INTO timeline_fts(rowid, title, description)
+    VALUES (new.rowid, new.title, new.description);
 END;
 
 -- ==================== 索引 ====================

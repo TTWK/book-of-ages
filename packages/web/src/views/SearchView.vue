@@ -56,12 +56,16 @@
             class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#0D9488]/30 transition-all cursor-pointer group"
           >
             <div class="flex items-start justify-between">
-              <h4 class="text-lg font-semibold text-[#134E4A] group-hover:text-[#0D9488] transition-colors line-clamp-1">{{ event.title }}</h4>
+              <h4 class="text-lg font-semibold text-[#134E4A] group-hover:text-[#0D9488] transition-colors line-clamp-1">
+                <HighlightText :text="event.title" :query="searchQuery" />
+              </h4>
               <span class="px-2 py-0.5 ml-3 text-[10px] font-medium rounded-full shrink-0" :class="event.status === 'confirmed' ? 'bg-teal-100 text-teal-800' : 'bg-yellow-100 text-yellow-800'">
                 {{ event.status === 'confirmed' ? '已收录' : '待处理' }}
               </span>
             </div>
-            <p class="text-sm text-gray-500 mt-2 line-clamp-2">{{ event.summary || event.content?.slice(0, 150) }}</p>
+            <p class="text-sm text-gray-500 mt-2 line-clamp-2">
+              <HighlightText :text="event.summary || event.content?.slice(0, 150) || ''" :query="searchQuery" :max-length="150" />
+            </p>
           </div>
         </div>
       </div>
@@ -84,7 +88,9 @@
               <Paperclip v-else class="w-5 h-5" />
             </div>
             <div class="min-w-0">
-              <h4 class="text-sm font-medium text-gray-800 truncate">{{ material.title || '无标题材料' }}</h4>
+              <h4 class="text-sm font-medium text-gray-800 truncate">
+                <HighlightText :text="material.title || '无标题材料'" :query="searchQuery" />
+              </h4>
               <p class="text-xs text-gray-500 capitalize">{{ material.type }}</p>
             </div>
           </div>
@@ -104,10 +110,14 @@
           >
             <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#14B8A6]"></div>
             <div class="flex justify-between items-start">
-              <h4 class="text-base font-medium text-gray-800">{{ node.title }}</h4>
+              <h4 class="text-base font-medium text-gray-800">
+                <HighlightText :text="node.title" :query="searchQuery" />
+              </h4>
               <span v-if="node.node_date" class="text-xs text-gray-400 ml-2 shrink-0">{{ new Date(node.node_date).toLocaleDateString() }}</span>
             </div>
-            <p v-if="node.description" class="text-sm text-gray-500 mt-1 line-clamp-2">{{ node.description }}</p>
+            <p v-if="node.description" class="text-sm text-gray-500 mt-1 line-clamp-2">
+              <HighlightText :text="node.description" :query="searchQuery" :max-length="150" />
+            </p>
           </div>
         </div>
       </div>
@@ -135,6 +145,7 @@ import { useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
 import { Search, Loader2, FileText, Files, GitCommit, SearchX, Telescope, Image, Link, Paperclip } from 'lucide-vue-next';
 import { search, type SearchParams } from '../api/searchApi';
+import HighlightText from '../components/HighlightText.vue';
 
 const message = useMessage();
 const router = useRouter();

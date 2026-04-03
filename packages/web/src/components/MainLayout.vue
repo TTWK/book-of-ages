@@ -42,6 +42,10 @@
             <Moon v-else class="w-5 h-5" />
           </button>
 
+          <button @click="router.push({ name: 'audit' })" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer" title="操作日志">
+            <ScrollText class="w-5 h-5" />
+          </button>
+
           <button @click="router.push({ name: 'settings' })" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer">
             <Settings class="w-5 h-5" />
           </button>
@@ -89,7 +93,7 @@
 import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import appRouter from '../router';
-import { BookOpen, Inbox, FileText, Tags, Search, Settings, Sun, Moon } from 'lucide-vue-next';
+import { BookOpen, Inbox, FileText, Tags, Search, Settings, Sun, Moon, CalendarDays, ScrollText } from 'lucide-vue-next';
 import { useAppStore } from '../stores/app';
 
 const appStore = useAppStore()
@@ -110,7 +114,9 @@ const pageTitle = computed(() => {
 const navItems = [
   { label: '事件库', key: 'events', icon: FileText },
   { label: '收件箱', key: 'inbox', icon: Inbox },
+  { label: '时间线', key: 'timeline', icon: CalendarDays },
   { label: '标签', key: 'tags', icon: Tags },
+  { label: '搜索', key: 'search', icon: Search },
 ];
 
 function handleMenuClick(key: string) {

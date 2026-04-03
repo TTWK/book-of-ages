@@ -24,6 +24,12 @@ const routes = [
     meta: { title: '事件详情' },
   },
   {
+    path: '/timeline',
+    name: 'timeline',
+    component: () => import('../views/TimelineView.vue'),
+    meta: { title: '时间线' },
+  },
+  {
     path: '/tags',
     name: 'tags',
     component: () => import('../views/TagsView.vue'),
@@ -34,6 +40,12 @@ const routes = [
     name: 'search',
     component: () => import('../views/SearchView.vue'),
     meta: { title: '搜索' },
+  },
+  {
+    path: '/audit',
+    name: 'audit',
+    component: () => import('../views/AuditLogsView.vue'),
+    meta: { title: '操作日志' },
   },
   {
     path: '/settings',

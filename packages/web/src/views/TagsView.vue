@@ -1,51 +1,65 @@
 <template>
-  <div class="tags-view">
-    <n-card title="标签管理">
-      <template #header-extra>
-        <n-button type="primary" @click="handleCreate()">
-          <template #icon>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </template>
-          新建标签
-        </n-button>
-      </template>
+  <div class="relative min-h-[calc(100vh-8rem)] pb-20 max-w-4xl mx-auto">
+    <!-- Header Area -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-[#134E4A] tracking-tight">标签管理</h1>
+        <p class="text-sm text-gray-500 mt-1">事件聚合与分类</p>
+      </div>
+      <button 
+        @click="handleCreate()"
+        class="flex items-center px-4 py-2 bg-[#F97316] hover:bg-[#FB923C] text-white rounded-md font-medium transition-colors duration-200 cursor-pointer shadow-sm shadow-orange-500/20"
+      >
+        <Plus class="w-5 h-5 mr-1" />
+        新建标签
+      </button>
+    </div>
 
-      <n-space vertical>
-        <n-tree
-          :data="treeData"
-          :render-prefix="renderPrefix"
-          :render-suffix="renderSuffix"
-          block-line
-          key-field="id"
-          label-field="name"
-        />
-      </n-space>
-    </n-card>
+    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+      <n-tree
+        :data="treeData"
+        :render-prefix="renderPrefix"
+        :render-suffix="renderSuffix"
+        block-line
+        expand-on-click
+        key-field="id"
+        label-field="name"
+        class="custom-tree"
+      />
+      <div v-if="tags.length === 0" class="text-center py-12 text-gray-400">
+        暂无标签数据
+      </div>
+    </div>
 
     <!-- 创建/编辑标签 Modal -->
-    <n-modal v-model:show="showModal" preset="dialog" :title="editingTag ? '编辑标签' : '新建标签'">
-      <n-form ref="formRef" :model="formData" :rules="formRules">
-        <n-form-item label="名称" path="name">
-          <n-input v-model:value="formData.name" placeholder="标签名称" />
-        </n-form-item>
-        <n-form-item label="父标签" path="parent_id">
+    <n-modal v-model:show="showModal" preset="card" class="max-w-md" :title="editingTag ? '编辑标签' : '新建标签'">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">名称 *</label>
+          <input v-model="formData.name" class="w-full p-2 border border-gray-200 rounded-md outline-none focus:border-[#0D9488]" placeholder="标签名称" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">父标签 (可选)</label>
           <n-select
             v-model:value="formData.parent_id"
             :options="parentTagOptions"
             clearable
-            placeholder="选择父标签（可选）"
+            placeholder="选择父标签"
           />
-        </n-form-item>
-        <n-form-item label="颜色" path="color">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">颜色</label>
           <n-color-picker v-model:value="formData.color" />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-button @click="showModal = false">取消</n-button>
-        <n-button type="primary" :loading="saving" @click="handleSubmit">保存</n-button>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end space-x-3">
+          <button @click="showModal = false" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">取消</button>
+          <button @click="handleSubmit" :disabled="saving" class="px-4 py-2 text-white bg-[#0D9488] hover:bg-[#14B8A6] rounded-md transition-colors flex items-center">
+            <Loader2 v-if="saving" class="w-4 h-4 mr-2 animate-spin" />
+            保存
+          </button>
+        </div>
       </template>
     </n-modal>
   </div>
@@ -53,8 +67,9 @@
 
 <script setup lang="ts">
 import { ref, computed, h, onMounted } from 'vue';
-import type { FormRules, FormInst, TreeOption } from 'naive-ui';
-import { NButton, NTag, NPopconfirm, useMessage } from 'naive-ui';
+import type { TreeOption } from 'naive-ui';
+import { NPopconfirm, useMessage } from 'naive-ui';
+import { Plus, Edit2, Trash2, Loader2 } from 'lucide-vue-next';
 import type { Tag } from '@book-of-ages/shared';
 import { getTagList, createTag, updateTag, deleteTag } from '../api/tagApi';
 
@@ -71,18 +86,10 @@ const formData = ref({
   color: undefined as string | undefined,
 });
 
-const formRules: FormRules = {
-  name: { required: true, message: '请输入标签名称', trigger: 'blur' },
-};
-
-const formRef = ref<FormInst | null>(null);
-
-// 构建树形数据
 const treeData = computed(() => {
   const tagMap = new Map<string, TreeOption & { children?: TreeOption[] }>();
   const roots: TreeOption[] = [];
 
-  // 初始化所有节点
   tags.value.forEach(tag => {
     tagMap.set(tag.id, {
       id: tag.id,
@@ -94,7 +101,6 @@ const treeData = computed(() => {
     });
   });
 
-  // 构建树形结构
   tags.value.forEach(tag => {
     const node = tagMap.get(tag.id)!;
     if (tag.parent_id && tagMap.has(tag.parent_id)) {
@@ -107,7 +113,6 @@ const treeData = computed(() => {
   return roots;
 });
 
-// 父标签选项
 const parentTagOptions = computed(() => {
   return tags.value
     .filter(t => !editingTag.value || t.id !== editingTag.value.id)
@@ -117,72 +122,51 @@ const parentTagOptions = computed(() => {
     }));
 });
 
-// 渲染前缀（颜色标签）
 function renderPrefix(option: TreeOption) {
-  return h(NTag, {
-    size: 'small',
-    type: 'default',
+  const color = (option as any).color;
+  return h('div', {
+    class: 'w-3 h-3 rounded-full mr-2',
     style: {
-      backgroundColor: (option as any).color || undefined,
-      marginRight: '8px',
-    },
-  }, { default: () => '' });
+      backgroundColor: color || '#D1D5DB'
+    }
+  });
 }
 
-// 渲染后缀（操作按钮）
 function renderSuffix(option: TreeOption) {
   const tag = option as any;
   
-  return h('div', { style: { display: 'flex', gap: '8px' } }, [
-    h(NButton, {
-      size: 'tiny',
-      text: true,
-      type: 'primary',
-      onClick: (e: Event) => {
-        e.stopPropagation();
-        handleEdit(tag);
-      },
-    }, { default: () => '编辑' }),
+  return h('div', { class: 'flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity mr-2' }, [
+    h('button', {
+      class: 'p-1 text-gray-400 hover:text-[#0D9488] rounded transition-colors',
+      onClick: (e: Event) => { e.stopPropagation(); handleEdit(tag); }
+    }, [ h(Edit2, { class: 'w-4 h-4' }) ]),
     
     h(NPopconfirm, {
       onPositiveClick: () => handleDelete(tag),
     }, {
-      trigger: () => h(NButton, {
-        size: 'tiny',
-        text: true,
-        type: 'error',
-        onClick: (e: Event) => e.stopPropagation(),
-      }, { default: () => '删除' }),
+      trigger: () => h('button', {
+        class: 'p-1 text-gray-400 hover:text-red-500 rounded transition-colors',
+        onClick: (e: Event) => e.stopPropagation()
+      }, [ h(Trash2, { class: 'w-4 h-4' }) ]),
       default: () => `确定要删除标签"${tag.name}"吗？此操作不可撤销。`,
     }),
   ]);
 }
 
-// 打开创建模态框
 function handleCreate() {
   editingTag.value = null;
-  formData.value = {
-    name: '',
-    parent_id: undefined,
-    color: undefined,
-  };
+  formData.value = { name: '', parent_id: undefined, color: '#0D9488' };
   showModal.value = true;
 }
 
-// 打开编辑模态框
 function handleEdit(tag: Tag) {
   editingTag.value = tag;
-  formData.value = {
-    name: tag.name,
-    parent_id: tag.parent_id,
-    color: tag.color || undefined,
-  };
+  formData.value = { name: tag.name, parent_id: tag.parent_id, color: tag.color || undefined };
   showModal.value = true;
 }
 
-// 提交表单
 async function handleSubmit() {
-  await formRef.value?.validate();
+  if (!formData.value.name.trim()) return message.warning('标签名不能为空');
   
   saving.value = true;
   try {
@@ -197,13 +181,11 @@ async function handleSubmit() {
     loadTags();
   } catch (error) {
     message.error('操作失败');
-    console.error(error);
   } finally {
     saving.value = false;
   }
 }
 
-// 删除标签
 async function handleDelete(tag: Tag) {
   try {
     await deleteTag(tag.id);
@@ -211,17 +193,14 @@ async function handleDelete(tag: Tag) {
     loadTags();
   } catch (error) {
     message.error('删除失败');
-    console.error(error);
   }
 }
 
-// 加载标签列表
 async function loadTags() {
   try {
     tags.value = await getTagList();
   } catch (error) {
     message.error('加载标签失败');
-    console.error(error);
   }
 }
 
@@ -230,8 +209,15 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
-.tags-view {
-  height: 100%;
+<style>
+@reference "../style.css";
+.custom-tree .n-tree-node-content {
+  padding: 8px 0;
+}
+.custom-tree .n-tree-node-content:hover {
+  background-color: #F0FDFA !important;
+}
+.custom-tree .n-tree-node:hover .action-btns {
+  opacity: 1 !important;
 }
 </style>

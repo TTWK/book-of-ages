@@ -1,507 +1,389 @@
 <template>
-  <div class="event-detail-view" v-if="event">
-    <n-grid :cols="24" :x-gap="16" :y-gap="16">
-      <!-- 主内容区 -->
-      <n-gi :span="16">
-        <n-card style="margin-bottom: 16px">
-          <template #header>
-            <n-input
-              v-if="isEditing"
-              v-model:value="editForm.title"
-              placeholder="事件标题"
-              size="large"
-            />
-            <span v-else>{{ event.title }}</span>
-          </template>
-          <template #header-extra>
-            <n-space>
-              <n-tag :type="statusType">{{ statusLabel }}</n-tag>
-              <n-button v-if="!isEditing" size="small" @click="startEdit">
-                <template #icon>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                </template>
-                编辑
-              </n-button>
-              <n-button v-if="isEditing" size="small" @click="cancelEdit">取消</n-button>
-              <n-button v-if="isEditing" size="small" type="primary" :loading="saving" @click="handleSave">保存</n-button>
-            </n-space>
-          </template>
+  <div v-if="loading && !event" class="flex justify-center items-center py-32">
+    <Loader2 class="w-8 h-8 animate-spin text-[#0D9488]" />
+  </div>
 
-          <n-space vertical>
-            <!-- 事件日期 -->
-            <n-text depth="3" v-if="!isEditing && event.event_date">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
-              {{ formatDate(event.event_date) }}
-            </n-text>
-            <n-date-picker
-              v-if="isEditing"
-              v-model:value="editForm.event_date"
-              type="datetime"
-              clearable
-              placeholder="事件发生时间"
-            />
+  <div v-else-if="event" class="relative pb-24 md:pb-10">
+    <!-- Mobile Back Button -->
+    <div class="md:hidden flex items-center mb-4">
+      <button @click="handleBack" class="flex items-center text-[#0D9488] font-medium p-2 -ml-2 hover:bg-[#0D9488]/10 rounded-lg transition-colors">
+        <ArrowLeft class="w-5 h-5 mr-1" />
+        返回
+      </button>
+    </div>
 
-            <!-- 摘要 -->
-            <n-alert v-if="!isEditing && event.summary" type="info" :title="'摘要'">
-              {{ event.summary }}
-            </n-alert>
-            <n-input
-              v-if="isEditing"
-              v-model:value="editForm.summary"
-              type="textarea"
-              placeholder="事件摘要"
-              :rows="3"
-            />
-
-            <!-- 内容 -->
-            <template v-if="!isEditing">
-              <n-divider />
-              <n-scrollbar style="max-height: 60vh">
-                <div class="markdown-content" v-html="renderedContent"></div>
-              </n-scrollbar>
-            </template>
-            <n-input
-              v-if="isEditing"
-              v-model:value="editForm.content"
-              type="textarea"
-              placeholder="详细内容（支持 Markdown）"
-              :rows="12"
-            />
-
-            <!-- 来源链接 -->
-            <template v-if="!isEditing && event.source_url">
-              <n-divider />
-              <n-space>
-                <n-text depth="3">来源：</n-text>
-                <a :href="event.source_url" target="_blank">{{ event.source_url }}</a>
-              </n-space>
-            </template>
-            <n-input
-              v-if="isEditing"
-              v-model:value="editForm.source_url"
-              placeholder="来源链接 https://..."
-            />
-          </n-space>
-        </n-card>
-
-        <!-- 时间线节点 -->
-        <n-card title="时间线" style="margin-bottom: 16px">
-          <template #header-extra>
-            <n-button size="small" type="primary" @click="showAddTimeline = true">
-              <template #icon>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-              </template>
-              添加节点
-            </n-button>
-          </template>
-
-          <n-timeline v-if="timelineNodes.length > 0">
-            <n-timeline-item
-              v-for="node in timelineNodes"
-              :key="node.id"
-              :title="node.title"
-              :description="node.description"
-              :time="formatDate(node.node_date) || undefined"
-              :type="'default'"
-              @click="viewTimelineNode(node)"
-              style="cursor: pointer"
-            >
-              <template #icon>
-                <n-button size="tiny" text type="primary" @click.stop="editTimelineNode(node)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                </n-button>
-              </template>
-              <n-space style="margin-top: 8px">
-                <n-button size="small" text type="info" @click.stop="viewTimelineNode(node)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                  查看
-                </n-button>
-                <n-button size="small" text type="primary" @click.stop="uploadMaterialToNode(node)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                  </svg>
-                  上传材料
-                </n-button>
-                <n-button size="small" text type="error" @click.stop="deleteTimelineNodeItem(node)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  </svg>
-                </n-button>
-              </n-space>
-            </n-timeline-item>
-          </n-timeline>
-
-          <n-empty v-else description="暂无时间线节点" />
-        </n-card>
-
-        <!-- 参考材料 -->
-        <n-card title="参考材料" style="margin-bottom: 16px">
-          <template #header-extra>
-            <n-button size="small" type="primary" @click="showUploadMaterial = true">
-              <template #icon>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-              </template>
-              上传材料
-            </n-button>
-          </template>
-
-          <n-grid v-if="materials.length > 0" :cols="2" :x-gap="12" :y-gap="12">
-            <n-gi v-for="material in materials" :key="material.id">
-              <n-card :title="material.title || '无标题'" size="small">
-                <template #cover>
-                  <div v-if="material.type === 'image'" class="material-cover">
-                    <img :src="getMaterialPreviewUrl(material.id)" style="width: 100%; height: 120px; object-fit: cover" />
-                  </div>
-                  <div v-else-if="material.type === 'pdf'" class="material-cover pdf-cover">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                      <line x1="16" y1="13" x2="8" y2="13"></line>
-                      <line x1="16" y1="17" x2="8" y2="17"></line>
-                    </svg>
-                  </div>
-                  <div v-else class="material-cover">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                    </svg>
-                  </div>
-                </template>
-                <n-space vertical>
-                  <n-tag size="small">{{ material.type }}</n-tag>
-                  <n-text depth="3" style="font-size: 12px" v-if="material.source_url">
-                    {{ material.source_url?.slice(0, 50) }}...
-                  </n-text>
-                  <n-space>
-                    <n-button size="small" @click="previewMaterial(material)">预览</n-button>
-                    <n-button size="small" type="error" text @click="deleteMaterialItem(material.id)">删除</n-button>
-                  </n-space>
-                </n-space>
-              </n-card>
-            </n-gi>
-          </n-grid>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+      
+      <!-- Main Content Area (Left 70% on Desktop) -->
+      <div class="lg:col-span-8 space-y-6">
+        <div class="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm">
           
-          <n-empty v-else description="暂无参考材料" />
-        </n-card>
-      </n-gi>
+          <!-- Header -->
+          <div class="flex justify-between items-start mb-6">
+            <div class="flex-1">
+              <div v-if="isEditing">
+                <input 
+                  v-model="editForm.title" 
+                  class="w-full text-2xl font-bold text-[#134E4A] border-b-2 border-[#0D9488]/30 focus:border-[#0D9488] outline-none pb-1 bg-transparent transition-colors"
+                  placeholder="事件标题"
+                />
+              </div>
+              <h1 v-else class="text-2xl md:text-3xl font-bold text-[#134E4A] leading-tight">{{ event.title }}</h1>
+              
+              <div class="flex flex-wrap items-center gap-3 mt-4 text-sm text-gray-500">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium" :class="getStatusColor(event.status)">
+                  {{ getStatusLabel(event.status) }}
+                </span>
+                
+                <div v-if="isEditing" class="flex items-center">
+                  <Calendar class="w-4 h-4 mr-1.5" />
+                  <n-date-picker v-model:value="editForm.event_date" type="date" clearable size="small" class="w-36" />
+                </div>
+                <span v-else-if="event.event_date" class="flex items-center">
+                  <Calendar class="w-4 h-4 mr-1.5" />
+                  {{ new Date(event.event_date).toLocaleDateString() }}
+                </span>
+                
+                <a v-if="!isEditing && event.source_url" :href="event.source_url" target="_blank" class="flex items-center text-[#0D9488] hover:text-[#14B8A6] hover:underline transition-colors">
+                  <Link class="w-4 h-4 mr-1.5" />
+                  来源链接
+                </a>
+              </div>
+            </div>
+            
+            <div class="ml-4 flex-shrink-0 flex space-x-2">
+              <button 
+                v-if="!isEditing" 
+                @click="startEdit"
+                class="p-2 text-gray-400 hover:text-[#0D9488] bg-gray-50 hover:bg-[#F0FDFA] rounded-md transition-colors cursor-pointer"
+              >
+                <Edit2 class="w-5 h-5" />
+              </button>
+              <template v-else>
+                <button @click="cancelEdit" class="px-3 py-1.5 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer">取消</button>
+                <button 
+                  @click="handleSave"
+                  :disabled="saving"
+                  class="px-4 py-1.5 text-sm text-white bg-[#F97316] hover:bg-[#FB923C] rounded-md font-medium transition-colors cursor-pointer flex items-center shadow-sm"
+                >
+                  <Loader2 v-if="saving" class="w-4 h-4 mr-1 animate-spin" />
+                  <Save v-else class="w-4 h-4 mr-1" />
+                  保存
+                </button>
+              </template>
+            </div>
+          </div>
 
-      <!-- 侧边栏 -->
-      <n-gi :span="8">
-        <n-card title="操作" style="margin-bottom: 16px">
-          <n-space vertical>
-            <n-button block type="warning" @click="showStatusModal = true">
-              <template #icon>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                </svg>
-              </template>
-              修改状态
-            </n-button>
-            <n-button block type="error" @click="handleDelete">
-              <template #icon>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-              </template>
-              删除事件
-            </n-button>
-            <n-button block @click="handleBack">
-              <template #icon>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="19" y1="12" x2="5" y2="12"></line>
-                  <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-              </template>
-              返回列表
-            </n-button>
-          </n-space>
-        </n-card>
+          <!-- Summary -->
+          <div v-if="isEditing" class="mb-6">
+            <textarea 
+              v-model="editForm.summary" 
+              class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#0D9488] transition-colors"
+              placeholder="添加事件摘要..."
+              rows="3"
+            ></textarea>
+          </div>
+          <div v-else-if="event.summary" class="mb-8 p-4 bg-gray-50 border-l-4 border-[#0D9488] rounded-r-lg text-gray-700 leading-relaxed text-sm md:text-base">
+            {{ event.summary }}
+          </div>
 
-        <n-card title="标签" style="margin-bottom: 16px">
-          <n-space>
-            <n-tag v-for="tag in tags" :key="tag.id" :color="{ color: tag.color || undefined }">
+          <!-- Content -->
+          <div v-if="isEditing" class="mt-6">
+            <textarea 
+              v-model="editForm.content" 
+              class="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg font-mono text-sm text-gray-800 focus:outline-none focus:border-[#0D9488] transition-colors resize-y min-h-[300px]"
+              placeholder="详细内容 (支持 Markdown)"
+            ></textarea>
+            
+            <div class="mt-4">
+              <input 
+                v-model="editForm.source_url" 
+                type="text"
+                class="w-full p-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#0D9488] transition-colors"
+                placeholder="来源链接 https://..."
+              />
+            </div>
+          </div>
+          <div v-else class="prose prose-teal max-w-none text-gray-800 leading-loose prose-headings:text-[#134E4A] prose-a:text-[#0D9488] prose-a:no-underline hover:prose-a:underline">
+            <div v-html="renderedContent"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar (Right 30% on Desktop) -->
+      <div class="lg:col-span-4 space-y-6">
+        
+        <!-- Actions & Tags -->
+        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider">操作与标签</h3>
+            <button @click="showStatusModal = true" class="text-xs font-medium text-[#F97316] hover:text-[#FB923C] cursor-pointer">修改状态</button>
+          </div>
+          
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span 
+              v-for="tag in tags" 
+              :key="tag.id" 
+              class="px-2.5 py-1 bg-[#F0FDFA] text-[#0D9488] border border-[#CCFBF1] rounded-md text-xs font-medium flex items-center"
+            >
+              <Hash class="w-3 h-3 mr-1 opacity-70" />
               {{ tag.name }}
-            </n-tag>
-            <n-button size="small" text type="primary" @click="showTagModal = true">
-              + 添加
-            </n-button>
-          </n-space>
-        </n-card>
+            </span>
+            <button @click="showTagModal = true" class="px-2 py-1 bg-gray-50 text-gray-500 hover:text-[#0D9488] hover:bg-[#F0FDFA] border border-dashed border-gray-300 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center">
+              <Plus class="w-3 h-3 mr-0.5" />
+              标签
+            </button>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
+            <button @click="handleBack" class="flex items-center justify-center px-3 py-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+              <ArrowLeft class="w-4 h-4 mr-1.5" /> 返回
+            </button>
+            <button @click="handleDelete" class="flex items-center justify-center px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+              <Trash2 class="w-4 h-4 mr-1.5" /> 删除
+            </button>
+          </div>
+        </div>
 
-        <n-card title="信息">
-          <n-descriptions bordered :column="1" size="small">
-            <n-descriptions-item label="创建时间">
-              {{ formatDate(event.created_at) }}
-            </n-descriptions-item>
-            <n-descriptions-item label="更新时间">
-              {{ formatDate(event.updated_at) }}
-            </n-descriptions-item>
-            <n-descriptions-item label="ID">
-              {{ event.id.slice(0, 8) }}...
-            </n-descriptions-item>
-          </n-descriptions>
-        </n-card>
-      </n-gi>
-    </n-grid>
+        <!-- Timeline -->
+        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center">
+              <GitCommit class="w-4 h-4 mr-1.5" />
+              时间线
+            </h3>
+            <button @click="openAddTimeline" class="p-1 text-gray-400 hover:text-[#0D9488] bg-gray-50 hover:bg-[#F0FDFA] rounded transition-colors cursor-pointer">
+              <Plus class="w-4 h-4" />
+            </button>
+          </div>
 
-    <!-- 标签选择 Modal -->
-    <n-modal v-model:show="showTagModal" preset="dialog" title="选择标签">
-      <n-space vertical>
+          <div v-if="timelineNodes.length === 0" class="text-center py-6 text-sm text-gray-400">
+            暂无节点，点击右侧 + 号添加
+          </div>
+          
+          <div v-else class="relative border-l-2 border-gray-100 ml-2.5 space-y-6 pb-2">
+            <div v-for="node in timelineNodes" :key="node.id" class="relative pl-6 group">
+              <!-- Timeline Dot -->
+              <div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-2 border-[#14B8A6] group-hover:border-[#F97316] transition-colors"></div>
+              
+              <!-- Timeline Content -->
+              <div class="bg-gray-50 group-hover:bg-[#F0FDFA] p-3 rounded-lg transition-colors border border-transparent group-hover:border-[#CCFBF1]">
+                <div class="flex justify-between items-start mb-1">
+                  <h4 class="font-semibold text-sm text-[#134E4A]">{{ node.title }}</h4>
+                  <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button @click="editTimelineNode(node)" class="p-1 text-gray-400 hover:text-[#0D9488] rounded cursor-pointer"><Edit2 class="w-3 h-3" /></button>
+                    <button @click="deleteTimelineNodeItem(node)" class="p-1 text-gray-400 hover:text-red-500 rounded cursor-pointer"><Trash2 class="w-3 h-3" /></button>
+                  </div>
+                </div>
+                <div class="text-xs text-gray-500 mb-2 font-medium">{{ formatDate(node.node_date, true) }}</div>
+                <p v-if="node.description" class="text-xs text-gray-600 line-clamp-2">{{ node.description }}</p>
+                <div class="mt-2 text-xs">
+                  <button @click="uploadMaterialToNode(node)" class="text-[#0D9488] hover:underline cursor-pointer flex items-center">
+                    <Paperclip class="w-3 h-3 mr-1" /> 添加材料
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Materials -->
+        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center">
+              <Files class="w-4 h-4 mr-1.5" />
+              参考材料
+            </h3>
+            <button @click="showUploadMaterial = true" class="p-1 text-gray-400 hover:text-[#0D9488] bg-gray-50 hover:bg-[#F0FDFA] rounded transition-colors cursor-pointer">
+              <Upload class="w-4 h-4" />
+            </button>
+          </div>
+
+          <div v-if="materials.length === 0" class="text-center py-6 text-sm text-gray-400">
+            暂无附件材料
+          </div>
+          
+          <div v-else class="grid grid-cols-2 gap-3">
+            <div 
+              v-for="material in materials" 
+              :key="material.id"
+              class="relative group rounded-lg overflow-hidden border border-gray-200 bg-gray-50"
+            >
+              <!-- Cover Preview -->
+              <div class="h-20 w-full bg-gray-100 flex items-center justify-center relative cursor-pointer" @click="previewMaterial(material)">
+                <img v-if="material.type === 'image'" :src="getMaterialPreviewUrl(material.id)" class="w-full h-full object-cover" />
+                <FileText v-else-if="material.type === 'pdf'" class="w-8 h-8 text-red-400" />
+                <Image v-else-if="material.type === 'snapshot'" class="w-8 h-8 text-[#0D9488]" />
+                <File class="w-8 h-8 text-gray-400" v-else />
+                
+                <!-- Hover Overlay -->
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <ExternalLink class="w-5 h-5 text-white" />
+                </div>
+              </div>
+              
+              <!-- Info -->
+              <div class="p-2 bg-white flex items-center justify-between">
+                <span class="text-[10px] font-medium text-gray-600 truncate">{{ material.title || material.type }}</span>
+                <button @click="deleteMaterialItem(material.id)" class="p-1 text-gray-400 hover:text-red-500 rounded cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X class="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Edit Status Modal -->
+    <n-modal v-model:show="showStatusModal" preset="card" class="max-w-md" title="修改事件状态">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">当前状态</label>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-medium" :class="getStatusColor(event.status)">
+            {{ getStatusLabel(event.status) }}
+          </span>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">新状态</label>
+          <n-select v-model:value="newStatus" :options="[{label: '草稿', value: 'draft'}, {label: '已收录', value: 'confirmed'}, {label: '已归档', value: 'archived'}]" />
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end space-x-3">
+          <button @click="showStatusModal = false" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md">取消</button>
+          <button @click="handleSaveStatus" :disabled="savingStatus" class="px-4 py-2 text-white bg-[#0D9488] rounded-md flex items-center">保存</button>
+        </div>
+      </template>
+    </n-modal>
+
+    <!-- Tag Select Modal -->
+    <n-modal v-model:show="showTagModal" preset="card" class="max-w-md" title="选择标签">
+      <div class="max-h-60 overflow-y-auto">
         <n-checkbox-group v-model:value="selectedTagIds">
-          <n-space vertical>
-            <n-checkbox v-for="tag in allTags" :key="tag.id" :value="tag.id">
-              <n-tag :color="{ color: tag.color || undefined }">{{ tag.name }}</n-tag>
+          <div class="grid grid-cols-2 gap-2">
+            <n-checkbox v-for="tag in allTags" :key="tag.id" :value="tag.id" class="p-2 border border-gray-100 rounded hover:bg-gray-50">
+              <span class="text-sm">{{ tag.name }}</span>
             </n-checkbox>
-          </n-space>
+          </div>
         </n-checkbox-group>
-      </n-space>
-      <template #action>
-        <n-button @click="showTagModal = false">取消</n-button>
-        <n-button type="primary" @click="handleSaveTags">保存</n-button>
+      </div>
+      <template #footer>
+        <div class="flex justify-end space-x-3">
+          <button @click="showTagModal = false" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md">取消</button>
+          <button @click="handleSaveTags" class="px-4 py-2 text-white bg-[#0D9488] rounded-md">保存</button>
+        </div>
       </template>
     </n-modal>
 
-    <!-- 添加/编辑时间线节点 Modal -->
-    <n-modal v-model:show="showAddTimeline" preset="dialog" :title="editingTimelineNode ? '编辑节点' : '添加时间线节点'">
-      <n-form ref="timelineFormRef" :model="timelineForm" :rules="timelineFormRules">
-        <n-form-item label="标题" path="title">
-          <n-input v-model:value="timelineForm.title" placeholder="节点标题" />
-        </n-form-item>
-        <n-form-item label="描述" path="description">
-          <n-input v-model:value="timelineForm.description" type="textarea" :rows="3" placeholder="节点详情" />
-        </n-form-item>
-        <n-form-item label="日期" path="node_date">
-          <n-date-picker v-model:value="timelineForm.node_date" placeholder="节点发生日期" />
-        </n-form-item>
-        <n-form-item label="排序" path="sort_order">
-          <n-input-number v-model:value="timelineForm.sort_order" :min="0" placeholder="数字越小越靠前" />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-button @click="showAddTimeline = false">取消</n-button>
-        <n-button type="primary" :loading="savingTimeline" @click="handleSaveTimeline">保存</n-button>
+    <!-- Add Timeline Modal -->
+    <n-modal v-model:show="showAddTimeline" preset="card" class="max-w-xl" :title="editingTimelineNode ? '编辑节点' : '添加时间线节点'">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">节点标题 *</label>
+          <input v-model="timelineForm.title" class="w-full p-2 border border-gray-200 rounded-md focus:border-[#0D9488] outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">节点详情</label>
+          <textarea v-model="timelineForm.description" rows="3" class="w-full p-2 border border-gray-200 rounded-md focus:border-[#0D9488] outline-none"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">日期</label>
+            <n-date-picker v-model:value="timelineForm.node_date" type="datetime" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">排序权重 (越小越靠前)</label>
+            <n-input-number v-model:value="timelineForm.sort_order" :min="0" />
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end space-x-3">
+          <button @click="showAddTimeline = false" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md">取消</button>
+          <button @click="handleSaveTimeline" :disabled="savingTimeline" class="px-4 py-2 text-white bg-[#0D9488] rounded-md">保存</button>
+        </div>
       </template>
     </n-modal>
 
-    <!-- 上传材料 Modal -->
-    <n-modal v-model:show="showUploadMaterial" preset="dialog" title="上传材料">
-      <n-form ref="materialFormRef" :model="materialForm" :rules="materialFormRules">
-        <n-form-item label="标题" path="title">
-          <n-input v-model:value="materialForm.title" placeholder="材料标题" />
-        </n-form-item>
-        <n-form-item label="类型" path="type">
-          <n-select
-            v-model:value="materialForm.type"
-            :options="[
-              { label: '图片', value: 'image' },
-              { label: '视频', value: 'video' },
-              { label: 'PDF', value: 'pdf' },
-              { label: '网页快照', value: 'snapshot' },
-              { label: '其他', value: 'other' },
-            ]"
-          />
-        </n-form-item>
-        <n-form-item label="关联时间线节点" path="timeline_node_id">
-          <n-select
-            v-model:value="materialForm.timeline_node_id"
-            :options="timelineNodeOptions"
-            clearable
-            placeholder="选择关联的时间线节点（可选）"
-          />
-        </n-form-item>
-        <n-form-item label="上传文件" path="file">
-          <n-upload
-            :default-upload="false"
-            :file-list="materialForm.file ? [materialForm.file] : []"
-            @change="handleFileChange"
-          >
+    <!-- Upload Material Modal -->
+    <n-modal v-model:show="showUploadMaterial" preset="card" class="max-w-lg" title="上传参考材料">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">材料标题</label>
+          <input v-model="materialForm.title" class="w-full p-2 border border-gray-200 rounded-md outline-none focus:border-[#0D9488]" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">材料类型</label>
+          <n-select v-model:value="materialForm.type" :options="[{label:'图片',value:'image'},{label:'视频',value:'video'},{label:'PDF',value:'pdf'},{label:'网页快照',value:'snapshot'},{label:'其他',value:'other'}]" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">关联节点 (可选)</label>
+          <n-select v-model:value="materialForm.timeline_node_id" :options="timelineNodeOptions" clearable />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">上传文件</label>
+          <n-upload :default-upload="false" :file-list="materialForm.file ? [materialForm.file] : []" @change="handleFileChange">
             <n-button>选择文件</n-button>
           </n-upload>
-          <n-text depth="3" style="font-size: 12px; margin-top: 8px; display: block">
-            或
-          </n-text>
-        </n-form-item>
-        <n-form-item label="来源链接" path="source_url">
-          <n-input v-model:value="materialForm.source_url" placeholder="https://..." />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-button @click="showUploadMaterial = false">取消</n-button>
-        <n-button type="primary" :loading="uploadingMaterial" @click="handleUploadMaterial">上传</n-button>
-      </template>
-    </n-modal>
-
-    <!-- 时间线节点详情 Modal -->
-    <n-modal v-model:show="showTimelineNodeDetail" preset="dialog" :title="viewingTimelineNode?.title || '节点详情'">
-      <n-descriptions bordered :column="1" size="small">
-        <n-descriptions-item label="标题">
-          {{ viewingTimelineNode?.title }}
-        </n-descriptions-item>
-        <n-descriptions-item label="日期">
-          {{ formatDate(viewingTimelineNode?.node_date) || '未设置' }}
-        </n-descriptions-item>
-        <n-descriptions-item label="排序">
-          {{ viewingTimelineNode?.sort_order }}
-        </n-descriptions-item>
-        <n-descriptions-item label="描述">
-          <div v-if="viewingTimelineNode?.description" class="markdown-content" v-html="marked(viewingTimelineNode.description)"></div>
-          <n-text v-else depth="3">无描述</n-text>
-        </n-descriptions-item>
-      </n-descriptions>
-      
-      <n-divider />
-      
-      <n-space vertical>
-        <n-space>
-          <n-text strong>关联材料</n-text>
-          <n-button size="small" type="primary" @click="uploadMaterialToNode(viewingTimelineNode!)">
-            <template #icon>
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-              </svg>
-            </template>
-            上传材料
-          </n-button>
-        </n-space>
-        
-        <n-grid v-if="nodeMaterials.length > 0" :cols="2" :x-gap="8" :y-gap="8">
-          <n-gi v-for="material in nodeMaterials" :key="material.id">
-            <n-card size="small" :title="material.title || '无标题'">
-              <template #cover>
-                <div v-if="material.type === 'image'" class="material-cover">
-                  <img :src="getMaterialPreviewUrl(material.id)" style="width: 100%; height: 80px; object-fit: cover" />
-                </div>
-                <div v-else class="material-cover">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                  </svg>
-                </div>
-              </template>
-              <n-space>
-                <n-button size="tiny" @click="previewMaterial(material)">预览</n-button>
-                <n-button size="tiny" type="error" text @click="deleteMaterialItem(material.id)">删除</n-button>
-              </n-space>
-            </n-card>
-          </n-gi>
-        </n-grid>
-        <n-empty v-else description="暂无关联材料" />
-      </n-space>
-      
-      <template #action>
-        <n-button @click="showTimelineNodeDetail = false">关闭</n-button>
-        <n-button type="primary" @click="editTimelineNode(viewingTimelineNode!); showTimelineNodeDetail = false">编辑</n-button>
-      </template>
-    </n-modal>
-
-    <!-- 修改状态 Modal -->
-    <n-modal v-model:show="showStatusModal" preset="dialog" title="修改事件状态">
-      <n-form>
-        <n-form-item label="当前状态">
-          <n-tag :type="statusType">{{ statusLabel }}</n-tag>
-        </n-form-item>
-        <n-form-item label="新状态">
-          <n-select
-            v-model:value="newStatus"
-            :options="[
-              { label: '草稿', value: 'draft' },
-              { label: '已确认', value: 'confirmed' },
-              { label: '已归档', value: 'archived' }
-            ]"
-          />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-button @click="showStatusModal = false">取消</n-button>
-        <n-button type="primary" :loading="savingStatus" @click="handleSaveStatus">保存</n-button>
+          <p class="text-xs text-gray-400 mt-2">或提供来源链接：</p>
+          <input v-model="materialForm.source_url" class="w-full p-2 mt-1 border border-gray-200 rounded-md outline-none focus:border-[#0D9488]" placeholder="https://..." />
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end space-x-3">
+          <button @click="showUploadMaterial = false" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md">取消</button>
+          <button @click="handleUploadMaterial" :disabled="uploadingMaterial" class="px-4 py-2 text-white bg-[#0D9488] rounded-md">上传</button>
+        </div>
       </template>
     </n-modal>
   </div>
-
-  <n-empty v-else description="事件不存在" />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
+import { 
+  ArrowLeft, Edit2, Save, Loader2, Calendar, Link, 
+  Trash2, Plus, Hash, GitCommit, Paperclip, Files, 
+  Upload, FileText, Image, File, ExternalLink, X 
+} from 'lucide-vue-next';
+import { marked } from 'marked';
 import type { Event, Tag, TimelineNode, Material, EventStatus } from '@book-of-ages/shared';
 import { getEvent, updateEvent, deleteEvent, getEventTags, updateEventTags } from '../api/eventApi';
 import { getTagList } from '../api/tagApi';
 import { getTimelineNodes, createTimelineNode, updateTimelineNode, deleteTimelineNode } from '../api/timelineApi';
 import { getMaterials, uploadMaterial, deleteMaterial, getMaterialPreviewUrl } from '../api/materialApi';
-import { marked } from 'marked';
 
 const message = useMessage();
 const route = useRoute();
 const router = useRouter();
 
-// 日期格式化函数
-function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
-
+const loading = ref(true);
 const event = ref<Event | null>(null);
 const tags = ref<Tag[]>([]);
 const allTags = ref<Tag[]>([]);
 const timelineNodes = ref<TimelineNode[]>([]);
 const materials = ref<Material[]>([]);
 
-const showTagModal = ref(false);
-const showAddTimeline = ref(false);
-const showUploadMaterial = ref(false);
-const showTimelineNodeDetail = ref(false);
-const showStatusModal = ref(false);
 const isEditing = ref(false);
-
 const saving = ref(false);
-const savingTimeline = ref(false);
-const uploadingMaterial = ref(false);
-const savingStatus = ref(false);
 
-const selectedTagIds = ref<string[]>([]);
-const editingTimelineNode = ref<TimelineNode | null>(null);
-const viewingTimelineNode = ref<TimelineNode | null>(null);
-const nodeMaterials = ref<Material[]>([]);
+const showStatusModal = ref(false);
+const savingStatus = ref(false);
 const newStatus = ref<EventStatus>('draft');
+
+const showTagModal = ref(false);
+const selectedTagIds = ref<string[]>([]);
+
+const showAddTimeline = ref(false);
+const savingTimeline = ref(false);
+const editingTimelineNode = ref<TimelineNode | null>(null);
+
+const showUploadMaterial = ref(false);
+const uploadingMaterial = ref(false);
 
 const editForm = ref({
   title: '',
@@ -509,7 +391,6 @@ const editForm = ref({
   content: '',
   event_date: null as number | null,
   source_url: '',
-  status: 'draft' as EventStatus,
 });
 
 const timelineForm = ref({
@@ -527,151 +408,95 @@ const materialForm = ref({
   source_url: '',
 });
 
-const timelineFormRules = {
-  title: { required: true, message: '标题不能为空', trigger: 'blur' },
-};
-
-const materialFormRules = {
-  type: { required: true, message: '请选择类型', trigger: 'change' },
-};
-
-// @ts-ignore
-const timelineFormRef = ref<any>(null);
-// @ts-ignore
-const materialFormRef = ref<any>(null);
-
-const statusType = computed(() => {
-  const map: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-    draft: 'warning',
-    confirmed: 'success',
-    archived: 'info',
-    deleted: 'error',
-  };
-  return map[event.value?.status || ''] || 'default';
-});
-
-const statusLabel = computed(() => {
-  const map: Record<string, string> = {
-    draft: '草稿',
-    confirmed: '已确认',
-    archived: '已归档',
-    deleted: '已删除',
-  };
-  return map[event.value?.status || ''] || '';
-});
-
 const renderedContent = computed(() => {
-  if (!event.value?.content) return '';
+  if (!event.value?.content) return '<p class="text-gray-400 italic">暂无内容详情...</p>';
   return marked(event.value.content);
 });
 
-// 时间线节点选项
 const timelineNodeOptions = computed(() => {
-  return timelineNodes.value.map(node => ({
-    label: node.title,
-    value: node.id,
-  }));
+  return timelineNodes.value.map(n => ({ label: n.title, value: n.id }));
 });
 
-// 加载事件详情
+function formatDate(dateStr: string | null | undefined, short = false): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  if (short) return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  return date.toLocaleString();
+}
+
+function getStatusColor(status: string) {
+  const map: Record<string, string> = {
+    draft: 'bg-yellow-100 text-yellow-800',
+    confirmed: 'bg-teal-100 text-teal-800',
+    archived: 'bg-gray-100 text-gray-600',
+    deleted: 'bg-red-100 text-red-800',
+  };
+  return map[status] || 'bg-gray-100 text-gray-800';
+}
+
+function getStatusLabel(status: string) {
+  const map: Record<string, string> = {
+    draft: '待收录',
+    confirmed: '已收录',
+    archived: '已归档',
+    deleted: '已删除',
+  };
+  return map[status] || status;
+}
+
+function handleBack() {
+  router.back();
+}
+
 async function loadEvent() {
   const id = route.params.id as string;
   try {
     const data = await getEvent(id);
     event.value = data;
+    newStatus.value = data.status as EventStatus;
     
-    // 加载标签
-    const tagData = await getEventTags(id);
+    // Parallel loading
+    const [tagData, timelineData, materialData, allTagsData] = await Promise.all([
+      getEventTags(id),
+      getTimelineNodes(id),
+      getMaterials(id),
+      getTagList()
+    ]);
+    
     tags.value = tagData;
     selectedTagIds.value = tagData.map(t => t.id);
-    
-    // 加载时间线
-    await loadTimeline();
-    
-    // 加载材料
-    await loadMaterials();
-    
-    // 填充编辑表单
-    editForm.value = {
-      title: data.title,
-      summary: data.summary || '',
-      content: data.content || '',
-      event_date: data.event_date ? new Date(data.event_date).getTime() : null,
-      source_url: data.source_url || '',
-      status: data.status as EventStatus,
-    };
+    timelineNodes.value = timelineData.sort((a,b) => a.sort_order - b.sort_order);
+    materials.value = materialData;
+    allTags.value = allTagsData;
+
   } catch (error) {
-    message.error('加载事件详情失败');
-    console.error(error);
+    message.error('加载详情失败');
+  } finally {
+    loading.value = false;
   }
 }
 
-// 加载时间线
-async function loadTimeline() {
-  try {
-    timelineNodes.value = await getTimelineNodes(event.value!.id);
-  } catch (error) {
-    console.error('加载时间线失败', error);
-  }
-}
-
-// 加载材料
-async function loadMaterials() {
-  try {
-    materials.value = await getMaterials(event.value!.id);
-  } catch (error) {
-    console.error('加载材料失败', error);
-  }
-}
-
-// 加载所有标签
-async function loadTags() {
-  try {
-    allTags.value = await getTagList();
-  } catch (error) {
-    console.error('加载标签失败', error);
-  }
-}
-
-// 保存标签
-async function handleSaveTags() {
-  try {
-    await updateEventTags(event.value!.id, selectedTagIds.value);
-    tags.value = allTags.value.filter(t => selectedTagIds.value.includes(t.id));
-    showTagModal.value = false;
-    message.success('标签已更新');
-  } catch (error) {
-    message.error('更新标签失败');
-    console.error(error);
-  }
-}
-
-// 开始编辑
 function startEdit() {
   isEditing.value = true;
-  // 重置表单
   editForm.value = {
     title: event.value!.title,
     summary: event.value!.summary || '',
     content: event.value!.content || '',
     event_date: event.value!.event_date ? new Date(event.value!.event_date).getTime() : null,
     source_url: event.value!.source_url || '',
-    status: event.value!.status as EventStatus,
   };
 }
 
-// 取消编辑
 function cancelEdit() {
   isEditing.value = false;
 }
 
-// 保存编辑
 async function handleSave() {
   if (!editForm.value.title.trim()) {
     message.warning('标题不能为空');
     return;
   }
-  
   saving.value = true;
   try {
     const updated = await updateEvent(event.value!.id, {
@@ -680,76 +505,112 @@ async function handleSave() {
       content: editForm.value.content || undefined,
       event_date: editForm.value.event_date ? new Date(editForm.value.event_date).toISOString() : undefined,
       source_url: editForm.value.source_url || undefined,
-      status: editForm.value.status,
     });
     event.value = updated;
     isEditing.value = false;
     message.success('保存成功');
   } catch (error) {
     message.error('保存失败');
-    console.error(error);
   } finally {
     saving.value = false;
   }
 }
 
-// 保存状态
-async function handleSaveStatus() {
-  if (!newStatus.value) {
-    message.warning('请选择新状态');
-    return;
+async function handleDelete() {
+  if (!confirm('确定要删除此事件吗？')) return;
+  try {
+    await deleteEvent(event.value!.id);
+    message.success('已删除');
+    router.replace('/events');
+  } catch (error) {
+    message.error('删除失败');
   }
-  
+}
+
+async function handleSaveStatus() {
   savingStatus.value = true;
   try {
     await updateEvent(event.value!.id, { status: newStatus.value });
-    message.success('状态已更新');
+    event.value!.status = newStatus.value;
     showStatusModal.value = false;
-    // 重新加载事件
-    const data = await getEvent(event.value!.id);
-    event.value = data;
-    editForm.value.status = data.status as EventStatus;
+    message.success('状态已更新');
   } catch (error) {
-    message.error('状态更新失败');
-    console.error(error);
+    message.error('更新失败');
   } finally {
     savingStatus.value = false;
   }
 }
 
-// 删除
-async function handleDelete() {
+async function handleSaveTags() {
   try {
-    await deleteEvent(event.value!.id);
+    await updateEventTags(event.value!.id, selectedTagIds.value);
+    tags.value = allTags.value.filter(t => selectedTagIds.value.includes(t.id));
+    showTagModal.value = false;
+    message.success('标签已更新');
+  } catch (error) {
+    message.error('更新失败');
+  }
+}
+
+// Timeline
+function openAddTimeline() {
+  editingTimelineNode.value = null;
+  timelineForm.value = { title: '', description: '', node_date: null, sort_order: timelineNodes.value.length * 10 };
+  showAddTimeline.value = true;
+}
+
+function editTimelineNode(node: TimelineNode) {
+  editingTimelineNode.value = node;
+  timelineForm.value = { 
+    title: node.title, 
+    description: node.description || '', 
+    node_date: node.node_date ? new Date(node.node_date).getTime() : null, 
+    sort_order: node.sort_order 
+  };
+  showAddTimeline.value = true;
+}
+
+async function handleSaveTimeline() {
+  if (!timelineForm.value.title.trim()) return message.warning('标题必填');
+  savingTimeline.value = true;
+  try {
+    const payload = {
+      title: timelineForm.value.title,
+      description: timelineForm.value.description || undefined,
+      node_date: timelineForm.value.node_date ? new Date(timelineForm.value.node_date).toISOString() : undefined,
+      sort_order: timelineForm.value.sort_order,
+    };
+    
+    if (editingTimelineNode.value) {
+      await updateTimelineNode(editingTimelineNode.value.id, payload);
+    } else {
+      await createTimelineNode(event.value!.id, payload);
+    }
+    
+    timelineNodes.value = (await getTimelineNodes(event.value!.id)).sort((a,b) => a.sort_order - b.sort_order);
+    showAddTimeline.value = false;
+    message.success('时间线已更新');
+  } catch (error) {
+    message.error('更新失败');
+  } finally {
+    savingTimeline.value = false;
+  }
+}
+
+async function deleteTimelineNodeItem(node: TimelineNode) {
+  if (!confirm('删除该节点？')) return;
+  try {
+    await deleteTimelineNode(node.id);
+    timelineNodes.value = timelineNodes.value.filter(n => n.id !== node.id);
     message.success('已删除');
-    router.push('/events');
   } catch (error) {
     message.error('删除失败');
-    console.error(error);
   }
 }
 
-// 返回
-function handleBack() {
-  router.back();
-}
-
-// 时间线相关
-function viewTimelineNode(node: TimelineNode) {
-  viewingTimelineNode.value = node;
-  showTimelineNodeDetail.value = true;
-  // 加载该节点的关联材料
-  loadNodeMaterials(node.id);
-}
-
-async function loadNodeMaterials(nodeId: string) {
-  try {
-    const allMaterials = await getMaterials(event.value!.id);
-    nodeMaterials.value = allMaterials.filter(m => m.timeline_node_id === nodeId);
-  } catch (error) {
-    console.error('加载节点材料失败', error);
-    nodeMaterials.value = [];
-  }
+// Materials
+function handleFileChange({ file }: { file: File | null }) {
+  materialForm.value.file = file;
 }
 
 function uploadMaterialToNode(node: TimelineNode) {
@@ -757,79 +618,10 @@ function uploadMaterialToNode(node: TimelineNode) {
   showUploadMaterial.value = true;
 }
 
-function editTimelineNode(node: TimelineNode) {
-  editingTimelineNode.value = node;
-  timelineForm.value = {
-    title: node.title,
-    description: node.description || '',
-    node_date: node.node_date ? new Date(node.node_date).getTime() : null,
-    sort_order: node.sort_order,
-  };
-  showAddTimeline.value = true;
-}
-
-async function handleSaveTimeline() {
-  savingTimeline.value = true;
-  try {
-    if (editingTimelineNode.value) {
-      await updateTimelineNode(editingTimelineNode.value.id, {
-        title: timelineForm.value.title,
-        description: timelineForm.value.description || undefined,
-        node_date: timelineForm.value.node_date ? new Date(timelineForm.value.node_date).toISOString() : undefined,
-        sort_order: timelineForm.value.sort_order,
-      });
-      message.success('节点已更新');
-    } else {
-      await createTimelineNode(event.value!.id, {
-        title: timelineForm.value.title,
-        description: timelineForm.value.description || undefined,
-        node_date: timelineForm.value.node_date ? new Date(timelineForm.value.node_date).toISOString() : undefined,
-        sort_order: timelineForm.value.sort_order,
-      });
-      message.success('节点已添加');
-    }
-    showAddTimeline.value = false;
-    editingTimelineNode.value = null;
-    loadTimeline();
-    // 如果正在查看节点详情，刷新
-    if (viewingTimelineNode.value) {
-      const updatedNodes = await getTimelineNodes(event.value!.id);
-      const updatedNode = updatedNodes.find(n => n.id === viewingTimelineNode.value!.id);
-      if (updatedNode) {
-        viewingTimelineNode.value = updatedNode;
-        loadNodeMaterials(updatedNode.id);
-      }
-    }
-  } catch (error) {
-    message.error('操作失败');
-    console.error(error);
-  } finally {
-    savingTimeline.value = false;
-  }
-}
-
-async function deleteTimelineNodeItem(node: TimelineNode) {
-  try {
-    await deleteTimelineNode(node.id);
-    message.success('节点已删除');
-    loadTimeline();
-  } catch (error) {
-    message.error('删除失败');
-    console.error(error);
-  }
-}
-
-// 材料相关
-function handleFileChange({ file }: { file: File | null }) {
-  materialForm.value.file = file;
-}
-
 async function handleUploadMaterial() {
   if (!materialForm.value.file && !materialForm.value.source_url) {
-    message.warning('请上传文件或提供来源链接');
-    return;
+    return message.warning('需提供文件或来源链接');
   }
-
   uploadingMaterial.value = true;
   try {
     await uploadMaterial({
@@ -840,95 +632,48 @@ async function handleUploadMaterial() {
       source_url: materialForm.value.source_url || undefined,
       file: materialForm.value.file || undefined,
     });
-    message.success('材料已上传');
     showUploadMaterial.value = false;
-    materialForm.value = {
-      title: '',
-      type: 'image',
-      timeline_node_id: undefined,
-      file: null,
-      source_url: '',
-    };
-    loadMaterials();
-    // 如果正在查看节点详情，刷新节点材料列表
-    if (viewingTimelineNode.value) {
-      loadNodeMaterials(viewingTimelineNode.value.id);
-    }
+    materialForm.value = { title: '', type: 'image', timeline_node_id: undefined, file: null, source_url: '' };
+    materials.value = await getMaterials(event.value!.id);
+    message.success('材料已上传');
   } catch (error) {
     message.error('上传失败');
-    console.error(error);
   } finally {
     uploadingMaterial.value = false;
   }
 }
 
 function previewMaterial(material: Material) {
-  window.open(getMaterialPreviewUrl(material.id), '_blank');
+  if (material.type === 'image' || material.type === 'pdf') {
+    window.open(getMaterialPreviewUrl(material.id), '_blank');
+  } else if (material.source_url) {
+    window.open(material.source_url, '_blank');
+  }
 }
 
 async function deleteMaterialItem(id: string) {
+  if (!confirm('删除该材料？')) return;
   try {
     await deleteMaterial(id);
-    message.success('材料已删除');
-    loadMaterials();
-    // 如果正在查看节点详情，刷新节点材料列表
-    if (viewingTimelineNode.value) {
-      loadNodeMaterials(viewingTimelineNode.value.id);
-    }
+    materials.value = materials.value.filter(m => m.id !== id);
+    message.success('已删除');
   } catch (error) {
     message.error('删除失败');
-    console.error(error);
   }
 }
 
 onMounted(() => {
   loadEvent();
-  loadTags();
 });
 </script>
 
-<style scoped>
-.event-detail-view {
-  padding: 0;
-}
-
-.markdown-content {
-  line-height: 1.8;
-}
-
-.markdown-content :deep(h1),
-.markdown-content :deep(h2),
-.markdown-content :deep(h3) {
-  margin-top: 24px;
-  margin-bottom: 16px;
-}
-
-.markdown-content :deep(p) {
-  margin-bottom: 16px;
-}
-
-.markdown-content :deep(code) {
-  background-color: var(--n-color-embedded);
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.markdown-content :deep(pre) {
-  background-color: var(--n-color-embedded);
-  padding: 16px;
-  border-radius: 8px;
-  overflow-x: auto;
-}
-
-.material-cover {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 120px;
-  background-color: var(--n-color-embedded);
-}
-
-.pdf-cover {
-  background-color: #fff5f5;
-}
+<style>
+@reference "../style.css";
+/* Make Markdown headings smaller and integrated */
+.prose h1 { @apply text-2xl mt-8 mb-4; }
+.prose h2 { @apply text-xl mt-6 mb-3; }
+.prose h3 { @apply text-lg mt-4 mb-2; }
+.prose blockquote { @apply border-l-4 border-[#14B8A6] pl-4 italic text-gray-600 bg-[#F0FDFA] py-2 rounded-r-lg my-4; }
+.prose pre { @apply bg-gray-50 text-gray-800 border border-gray-200 rounded-lg p-4 overflow-x-auto my-4; }
+.prose code { @apply text-[#0D9488] bg-[#F0FDFA] px-1.5 py-0.5 rounded text-sm; }
 </style>

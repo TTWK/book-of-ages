@@ -1,76 +1,147 @@
 <template>
-  <div class="inbox-view">
-    <n-card title="收件箱">
-      <template #header-extra>
-        <n-space>
-          <n-tag type="info" size="small">草稿事件</n-tag>
-          <n-button size="small" @click="loadEvents">
-            <template #icon>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-              </svg>
-            </template>
-            刷新
-          </n-button>
-        </n-space>
-      </template>
-
-      <n-data-table
-        :columns="columns"
-        :data="events"
-        :loading="loading"
-        :pagination="pagination"
-        @update:checked-row-keys="onChecked"
-      />
-    </n-card>
-
-    <!-- 快速预览 Modal -->
-    <n-modal v-model:show="showPreview" preset="dialog" title="事件预览" :style="{ width: '600px' }">
-      <div v-if="selectedEvent" class="preview-content">
-        <n-h4>{{ selectedEvent.title }}</n-h4>
-        <n-space vertical>
-          <n-tag v-if="selectedEvent.status" :type="getStatusType(selectedEvent.status)">
-            {{ getStatusLabel(selectedEvent.status) }}
-          </n-tag>
-          <n-text depth="3">{{ selectedEvent.event_date }}</n-text>
-          <n-divider />
-          <n-text>{{ selectedEvent.summary }}</n-text>
-          <n-divider />
-          <n-scrollbar style="max-height: 200px">
-            <n-text depth="3">{{ selectedEvent.content }}</n-text>
-          </n-scrollbar>
-          <n-input-group v-if="selectedEvent.source_url">
-            <n-input :value="selectedEvent.source_url" disabled />
-            <a :href="selectedEvent.source_url" target="_blank">
-              <n-button>打开链接</n-button>
-            </a>
-          </n-input-group>
-        </n-space>
+  <div class="relative min-h-[calc(100vh-8rem)]">
+    <!-- Header Area -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-[#134E4A] tracking-tight">收件箱</h1>
+        <p class="text-sm text-gray-500 mt-1">待处理的抓取记录</p>
       </div>
-      <template #action>
-        <n-space justify="space-between">
-          <n-space>
-            <n-button @click="showPreview = false">关闭</n-button>
-            <n-button @click="handlePreview">重新加载预览</n-button>
-          </n-space>
-          <n-space>
-            <n-button type="warning" @click="() => handleArchive()">归档</n-button>
-            <n-button type="primary" @click="() => handleConfirm()">收录</n-button>
-          </n-space>
-        </n-space>
+      
+      <button 
+        @click="loadEvents" 
+        :disabled="loading"
+        class="flex items-center px-3 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-md font-medium transition-colors duration-200 cursor-pointer disabled:opacity-50 shadow-sm"
+      >
+        <RefreshCw class="w-4 h-4 mr-1" :class="{ 'animate-spin': loading }" />
+        刷新
+      </button>
+    </div>
+
+    <!-- Inbox List -->
+    <div v-if="loading && events.length === 0" class="flex justify-center items-center py-20">
+      <Loader2 class="w-8 h-8 animate-spin text-[#0D9488]" />
+    </div>
+    
+    <div v-else-if="events.length === 0" class="flex flex-col items-center justify-center py-32 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm">
+      <CheckCircle class="w-16 h-16 mb-4 text-[#14B8A6]/40" />
+      <p class="text-xl font-medium text-[#134E4A]">收件箱已清空</p>
+      <p class="text-sm mt-2">干得漂亮！所有抓取的记录都已处理完毕。</p>
+    </div>
+
+    <div v-else class="space-y-3 pb-20">
+      <div 
+        v-for="event in events" 
+        :key="event.id"
+        class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 group flex flex-col md:flex-row md:items-center justify-between gap-4"
+      >
+        <div class="flex-1 min-w-0 cursor-pointer" @click="openPreview(event)">
+          <div class="flex items-start mb-1">
+            <div class="w-2 h-2 mt-2 mr-3 rounded-full bg-[#F97316] flex-shrink-0"></div>
+            <div>
+              <h2 class="text-base font-semibold text-[#134E4A] group-hover:text-[#0D9488] transition-colors line-clamp-1">{{ event.title }}</h2>
+              <p v-if="event.summary" class="text-sm text-gray-500 mt-1 line-clamp-1">{{ event.summary }}</p>
+            </div>
+          </div>
+          
+          <div class="flex items-center text-xs text-gray-400 pl-5 mt-2 space-x-4">
+            <span v-if="event.event_date" class="flex items-center">
+              <Calendar class="w-3.5 h-3.5 mr-1" />
+              {{ new Date(event.event_date).toLocaleDateString() }}
+            </span>
+            <a 
+              v-if="event.source_url" 
+              :href="event.source_url" 
+              target="_blank"
+              @click.stop
+              class="flex items-center text-[#0D9488] hover:text-[#14B8A6] hover:underline"
+            >
+              <Link class="w-3.5 h-3.5 mr-1" />
+              来源链接
+            </a>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="flex items-center justify-end space-x-2 pl-5 md:pl-0 shrink-0">
+          <button 
+            @click.stop="handleArchive(event)"
+            class="px-3 py-1.5 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md font-medium transition-colors cursor-pointer flex items-center"
+          >
+            <Archive class="w-4 h-4 mr-1" />
+            归档
+          </button>
+          <button 
+            @click.stop="handleConfirm(event)"
+            class="px-4 py-1.5 text-sm text-white bg-[#F97316] hover:bg-[#FB923C] rounded-md font-medium transition-colors cursor-pointer flex items-center shadow-sm shadow-orange-500/20"
+          >
+            <Check class="w-4 h-4 mr-1" />
+            收录
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <n-modal v-model:show="showPreview" preset="card" class="max-w-2xl" title="预览待处理事件">
+      <div v-if="selectedEvent" class="space-y-4">
+        <div>
+          <h2 class="text-xl font-bold text-[#134E4A]">{{ selectedEvent.title }}</h2>
+          <div class="flex items-center space-x-3 text-sm text-gray-500 mt-2">
+            <span class="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">待收录</span>
+            <span v-if="selectedEvent.event_date" class="flex items-center">
+              <Calendar class="w-4 h-4 mr-1" />
+              {{ new Date(selectedEvent.event_date).toLocaleDateString() }}
+            </span>
+          </div>
+        </div>
+
+        <div v-if="selectedEvent.summary" class="p-4 bg-gray-50 rounded-lg text-gray-700 text-sm">
+          {{ selectedEvent.summary }}
+        </div>
+
+        <div class="prose prose-sm max-w-none max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+          <p class="whitespace-pre-wrap text-gray-600">{{ selectedEvent.content }}</p>
+        </div>
+
+        <div v-if="selectedEvent.source_url" class="pt-2">
+          <a :href="selectedEvent.source_url" target="_blank" class="inline-flex items-center px-4 py-2 bg-[#F0FDFA] text-[#0D9488] hover:bg-[#CCFBF1] rounded-md transition-colors text-sm font-medium">
+            <ExternalLink class="w-4 h-4 mr-2" />
+            打开原始链接
+          </a>
+        </div>
+      </div>
+      
+      <template #footer>
+        <div class="flex justify-between items-center w-full">
+          <button @click="showPreview = false" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-md transition-colors cursor-pointer">关闭</button>
+          <div class="flex space-x-3">
+            <button 
+              @click="handleArchive(selectedEvent)"
+              class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer flex items-center"
+            >
+              <Archive class="w-4 h-4 mr-2" />
+              归档
+            </button>
+            <button 
+              @click="handleConfirm(selectedEvent)"
+              class="px-6 py-2 bg-[#F97316] hover:bg-[#FB923C] text-white rounded-md font-medium transition-colors flex items-center cursor-pointer shadow-sm"
+            >
+              <Check class="w-4 h-4 mr-2" />
+              确认收录
+            </button>
+          </div>
+        </div>
       </template>
     </n-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed, onMounted } from 'vue';
-import type { DataTableColumns, TagProps } from 'naive-ui';
-import { NButton, NTag, NText, NSpace } from 'naive-ui';
+import { ref, onMounted } from 'vue';
+import { useMessage } from 'naive-ui';
+import { Loader2, RefreshCw, CheckCircle, Calendar, Link, Archive, Check, ExternalLink } from 'lucide-vue-next';
 import type { Event } from '@book-of-ages/shared';
 import { getEventList, updateEvent } from '../api/eventApi';
-import { useMessage } from 'naive-ui';
 
 const message = useMessage();
 
@@ -79,97 +150,6 @@ const loading = ref(false);
 const showPreview = ref(false);
 const selectedEvent = ref<Event | null>(null);
 
-const pagination = computed(() => ({
-  page: 1,
-  pageSize: 20,
-  showSizePicker: true,
-  pageSizes: [10, 20, 50],
-}));
-
-// 表格列定义
-const columns: DataTableColumns<Event> = [
-  {
-    type: 'selection',
-  },
-  {
-    title: '状态',
-    key: 'status',
-    width: 80,
-    render: (row) => {
-      const typeMap: Record<string, TagProps['type']> = {
-        draft: 'warning',
-        confirmed: 'success',
-        archived: 'info',
-        deleted: 'error',
-      };
-      const labelMap: Record<string, string> = {
-        draft: '草稿',
-        confirmed: '已确认',
-        archived: '已归档',
-        deleted: '已删除',
-      };
-      return h(NTag, { type: typeMap[row.status] || 'default' }, { default: () => labelMap[row.status] || row.status });
-    },
-  },
-  {
-    title: '标题',
-    key: 'title',
-    ellipsis: { tooltip: true },
-    render: (row) =>
-      h(NText, { depth: row.status === 'draft' ? 1 : 2 }, { default: () => row.title }),
-  },
-  {
-    title: '摘要',
-    key: 'summary',
-    ellipsis: { tooltip: true },
-    width: 300,
-  },
-  {
-    title: '来源',
-    key: 'source_url',
-    width: 150,
-    render: (row) => {
-      if (!row.source_url) return h(NText, { depth: 3 }, { default: () => '-' });
-      return h(
-        'a',
-        { href: row.source_url, target: '_blank', style: { fontSize: '12px' } },
-        { default: () => '查看链接' }
-      );
-    },
-  },
-  {
-    title: '日期',
-    key: 'event_date',
-    width: 120,
-  },
-  {
-    title: '操作',
-    key: 'actions',
-    width: 200,
-    fixed: 'right',
-    render: (row) =>
-      h(NSpace, {}, {
-        default: () => [
-          h(NButton, {
-            size: 'small',
-            onClick: () => openPreview(row),
-          }, { default: () => '预览' }),
-          h(NButton, {
-            size: 'small',
-            type: 'primary',
-            onClick: () => handleConfirm(row),
-          }, { default: () => '收录' }),
-          h(NButton, {
-            size: 'small',
-            type: 'warning',
-            onClick: () => handleArchive(row),
-          }, { default: () => '归档' }),
-        ],
-      }),
-  },
-];
-
-// 加载事件列表
 async function loadEvents() {
   loading.value = true;
   try {
@@ -183,76 +163,35 @@ async function loadEvents() {
   }
 }
 
-// 打开预览
 function openPreview(event: Event) {
   selectedEvent.value = event;
   showPreview.value = true;
 }
 
-// 重新加载预览
-function handlePreview() {
-  if (selectedEvent.value) {
-    openPreview(selectedEvent.value);
-  }
-}
-
-// 收录事件
-async function handleConfirm(event?: Event) {
-  const target = event || selectedEvent.value;
-  if (!target) return;
-
+async function handleConfirm(event: Event | null) {
+  if (!event) return;
   try {
-    await updateEvent(target.id, { status: 'confirmed' });
+    await updateEvent(event.id, { status: 'confirmed' });
     message.success('已收录事件');
     showPreview.value = false;
-    loadEvents();
+    events.value = events.value.filter(e => e.id !== event.id);
   } catch (error) {
     message.error('收录失败');
     console.error(error);
   }
 }
 
-// 归档事件
-async function handleArchive(event?: Event) {
-  const target = event || selectedEvent.value;
-  if (!target) return;
-
+async function handleArchive(event: Event | null) {
+  if (!event) return;
   try {
-    await updateEvent(target.id, { status: 'archived' });
+    await updateEvent(event.id, { status: 'archived' });
     message.success('已归档事件');
     showPreview.value = false;
-    loadEvents();
+    events.value = events.value.filter(e => e.id !== event.id);
   } catch (error) {
     message.error('归档失败');
     console.error(error);
   }
-}
-
-// 表格选择
-function onChecked(rowKeys: (string | number)[]) {
-  console.log('选中行:', rowKeys);
-}
-
-// 获取状态标签类型
-function getStatusType(status: string): TagProps['type'] {
-  const typeMap: Record<string, TagProps['type']> = {
-    draft: 'warning',
-    confirmed: 'success',
-    archived: 'info',
-    deleted: 'error',
-  };
-  return typeMap[status] || 'default';
-}
-
-// 获取状态标签文本
-function getStatusLabel(status: string): string {
-  const labelMap: Record<string, string> = {
-    draft: '草稿',
-    confirmed: '已确认',
-    archived: '已归档',
-    deleted: '已删除',
-  };
-  return labelMap[status] || status;
 }
 
 onMounted(() => {
@@ -261,11 +200,17 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.inbox-view {
-  height: 100%;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
 }
-
-.preview-content {
-  padding: 8px 0;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(13, 148, 136, 0.2);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(13, 148, 136, 0.4);
 }
 </style>

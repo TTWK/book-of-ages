@@ -10,23 +10,28 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "vue": "^3.5.30",
-    "vue-router": "^4.3.0",
-    "pinia": "^2.1.7",
-    "naive-ui": "^2.38.1",
+    "@book-of-ages/shared": "*",
     "axios": "^1.6.8",
     "dayjs": "^1.11.10",
+    "lucide-vue-next": "^1.0.0",
     "marked": "^12.0.0",
-    "@book-of-ages/shared": "*"
+    "naive-ui": "^2.38.1",
+    "pinia": "^2.1.7",
+    "vue": "^3.5.30",
+    "vue-router": "^4.3.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^24.12.0",
     "@vitejs/plugin-vue": "^6.0.5",
+    "@vue/test-utils": "^2.4.5",
     "@vue/tsconfig": "^0.9.0",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.2",
     "typescript": "~5.9.3",
     "vite": "^8.0.1",
-    "vue-tsc": "^3.2.5",
     "vitest": "^1.3.1",
-    "@vue/test-utils": "^2.4.5"
+    "vue-tsc": "^3.2.5"
   }
 }

@@ -8,9 +8,21 @@
   "scripts": {
     "dev:web": "npm run dev -w @book-of-ages/web",
     "dev:server": "npm run dev -w @book-of-ages/server",
-    "build": "npm run build --workspaces"
+    "build": "npm run build --workspaces",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.1",
+    "@typescript-eslint/parser": "^8.58.1",
+    "eslint": "^10.2.0",
+    "eslint-plugin-vue": "^10.8.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.2",
+    "typescript": "^5.0.0",
+    "vue-eslint-parser": "^10.4.0"
   }
 }

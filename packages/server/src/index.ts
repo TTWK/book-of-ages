@@ -35,7 +35,7 @@ fastify.get('/health', async () => {
 });
 
 // 注册路由
-fastify.register(eventRoutes);       // 包含 /api/events 和 /api/events/:id/* 子路由
+fastify.register(eventRoutes); // 包含 /api/events 和 /api/events/:id/* 子路由
 fastify.register(tagRoutes);
 fastify.register(toolRoutes);
 fastify.register(searchRoutes);
@@ -43,7 +43,7 @@ fastify.register(settingsRoutes);
 
 const start = async () => {
   const port = parseInt(process.env.PORT || '3000', 10);
-  
+
   try {
     await initDatabase();
     await fastify.listen({ port, host: '0.0.0.0' });

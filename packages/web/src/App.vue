@@ -11,13 +11,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { darkTheme, type GlobalThemeOverrides } from 'naive-ui'
-import MainLayout from './components/MainLayout.vue'
-import { useAppStore } from './stores/app'
+import { computed } from 'vue';
+import { darkTheme, type GlobalThemeOverrides } from 'naive-ui';
+import MainLayout from './components/MainLayout.vue';
+import { useAppStore } from './stores/app';
 
-const appStore = useAppStore()
-const currentTheme = computed(() => appStore.isDark ? darkTheme : null)
+const appStore = useAppStore();
+const currentTheme = computed(() => (appStore.isDark ? darkTheme : null));
 
 const themeOverrides: GlobalThemeOverrides = {
   common: {
@@ -29,7 +29,7 @@ const themeOverrides: GlobalThemeOverrides = {
     infoColorHover: '#FB923C',
     infoColorPressed: '#EA580C',
     infoColorSuppl: 'rgba(249, 115, 22, 0.15)',
-    fontFamily: 'Inter, sans-serif'
+    fontFamily: 'Inter, sans-serif',
   },
   Button: {
     textColorPrimary: '#FFFFFF',
@@ -43,6 +43,6 @@ const themeOverrides: GlobalThemeOverrides = {
     textColorHoverInfo: '#FFFFFF',
     textColorPressedInfo: '#FFFFFF',
     textColorFocusInfo: '#FFFFFF',
-  }
-}
+  },
+};
 </script>

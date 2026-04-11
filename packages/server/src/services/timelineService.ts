@@ -4,28 +4,38 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { get, all, run } from '../db';
-import type { TimelineNode, CreateTimelineNodeInput, UpdateTimelineNodeInput } from '@book-of-ages/shared';
+import type {
+  TimelineNode,
+  CreateTimelineNodeInput,
+  UpdateTimelineNodeInput,
+} from '@book-of-ages/shared';
 
 /**
  * 创建时间线节点
  */
-export async function createTimelineNode(eventId: string, input: CreateTimelineNodeInput): Promise<TimelineNode> {
+export async function createTimelineNode(
+  eventId: string,
+  input: CreateTimelineNodeInput
+): Promise<TimelineNode> {
   const id = uuidv4();
   const now = new Date().toISOString();
 
-  await run(`
+  await run(
+    `
     INSERT INTO event_timeline_nodes (id, event_id, title, description, node_date, sort_order, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `, [
-    id,
-    eventId,
-    input.title,
-    input.description || null,
-    input.node_date || null,
-    input.sort_order || 0,
-    now,
-    now,
-  ]);
+  `,
+    [
+      id,
+      eventId,
+      input.title,
+      input.description || null,
+      input.node_date || null,
+      input.sort_order || 0,
+      now,
+      now,
+    ]
+  );
 
   const node = await getTimelineNodeById(id);
   if (!node) {
@@ -38,11 +48,14 @@ export async function createTimelineNode(eventId: string, input: CreateTimelineN
  * 获取事件的所有时间线节点
  */
 export async function getTimelineNodes(eventId: string): Promise<TimelineNode[]> {
-  return all<TimelineNode>(`
+  return all<TimelineNode>(
+    `
     SELECT * FROM event_timeline_nodes
     WHERE event_id = ?
     ORDER BY sort_order ASC, node_date ASC
-  `, [eventId]);
+  `,
+    [eventId]
+  );
 }
 
 /**
@@ -56,7 +69,10 @@ export async function getTimelineNodeById(id: string): Promise<TimelineNode | nu
 /**
  * 更新时间线节点
  */
-export async function updateTimelineNode(id: string, input: UpdateTimelineNodeInput): Promise<TimelineNode | null> {
+export async function updateTimelineNode(
+  id: string,
+  input: UpdateTimelineNodeInput
+): Promise<TimelineNode | null> {
   const now = new Date().toISOString();
 
   const updates: string[] = [];
@@ -87,9 +103,12 @@ export async function updateTimelineNode(id: string, input: UpdateTimelineNodeIn
   values.push(now);
   values.push(id);
 
-  await run(`
+  await run(
+    `
     UPDATE event_timeline_nodes SET ${updates.join(', ')} WHERE id = ?
-  `, values);
+  `,
+    values
+  );
 
   return getTimelineNodeById(id);
 }

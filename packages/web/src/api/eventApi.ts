@@ -3,7 +3,13 @@
  */
 
 import apiClient from './client';
-import type { Event, CreateEventInput, UpdateEventInput, EventStatus, Tag } from '@book-of-ages/shared';
+import type {
+  Event,
+  CreateEventInput,
+  UpdateEventInput,
+  EventStatus,
+  Tag,
+} from '@book-of-ages/shared';
 
 export interface EventListParams {
   status?: EventStatus;

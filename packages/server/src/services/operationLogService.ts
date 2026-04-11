@@ -18,10 +18,13 @@ export async function logOperation(
   const id = uuidv4();
   const now = new Date().toISOString();
 
-  await run(`
+  await run(
+    `
     INSERT INTO operation_logs (id, api_key_id, action, entity_type, entity_id, created_at)
     VALUES (?, ?, ?, ?, ?, ?)
-  `, [id, api_key_id || null, action, entity_type, entity_id, now]);
+  `,
+    [id, api_key_id || null, action, entity_type, entity_id, now]
+  );
 
   return {
     id,
@@ -37,11 +40,14 @@ export async function logOperation(
  * 获取操作日志列表
  */
 export async function getOperationLogs(limit: number = 100): Promise<OperationLog[]> {
-  return all<OperationLog>(`
+  return all<OperationLog>(
+    `
     SELECT * FROM operation_logs
     ORDER BY created_at DESC
     LIMIT ?
-  `, [limit]);
+  `,
+    [limit]
+  );
 }
 
 /**
@@ -51,11 +57,14 @@ export async function getEntityOperationLogs(
   entity_type: OperationEntityType,
   entity_id: string
 ): Promise<OperationLog[]> {
-  return all<OperationLog>(`
+  return all<OperationLog>(
+    `
     SELECT * FROM operation_logs
     WHERE entity_type = ? AND entity_id = ?
     ORDER BY created_at DESC
-  `, [entity_type, entity_id]);
+  `,
+    [entity_type, entity_id]
+  );
 }
 
 /**

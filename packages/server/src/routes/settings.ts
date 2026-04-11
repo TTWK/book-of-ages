@@ -3,27 +3,20 @@
  */
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import {
-  createAPIKey,
-  listAPIKeys,
-  deleteAPIKey,
-} from '../services/apiKeyService';
+import { createAPIKey, listAPIKeys, deleteAPIKey } from '../services/apiKeyService';
 import { getOperationLogs } from '../services/operationLogService';
 import type { CreateAPIKeyInput } from '@book-of-ages/shared';
 
 export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   // 获取 API Key 列表
-  fastify.get(
-    '/api/settings/keys',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const keys = await listAPIKeys();
+  fastify.get('/api/settings/keys', async (request: FastifyRequest, reply: FastifyReply) => {
+    const keys = await listAPIKeys();
 
-      reply.send({
-        success: true,
-        data: keys,
-      });
-    }
-  );
+    reply.send({
+      success: true,
+      data: keys,
+    });
+  });
 
   // 创建新的 API Key
   fastify.post(
@@ -39,9 +32,12 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Body: CreateAPIKeyInput;
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Body: CreateAPIKeyInput;
+      }>,
+      reply: FastifyReply
+    ) => {
       const { name } = request.body;
 
       if (!name || name.trim() === '') {
@@ -101,9 +97,12 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Querystring: { limit?: number };
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Querystring: { limit?: number };
+      }>,
+      reply: FastifyReply
+    ) => {
       const { limit = 100 } = request.query;
 
       const logs = await getOperationLogs(limit);

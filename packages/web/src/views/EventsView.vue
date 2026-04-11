@@ -3,7 +3,7 @@
     <!-- Header Area -->
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-[#134E4A] tracking-tight">事件库</h1>
-      
+
       <div class="hidden md:flex items-center space-x-4">
         <n-select
           v-model:value="statusFilter"
@@ -11,8 +11,8 @@
           class="w-32"
           @update:value="loadEvents"
         />
-        <button 
-          @click="openCreateModal" 
+        <button
+          @click="openCreateModal"
           class="flex items-center px-4 py-2 bg-[#F97316] hover:bg-[#FB923C] text-white rounded-md font-medium transition-colors duration-200 cursor-pointer shadow-sm shadow-orange-500/20"
         >
           <Plus class="w-5 h-5 mr-1" />
@@ -25,31 +25,40 @@
     <div v-if="loading" class="flex justify-center items-center py-20">
       <Loader2 class="w-8 h-8 animate-spin text-[#0D9488]" />
     </div>
-    
-    <div v-else-if="events.length === 0" class="flex flex-col items-center justify-center py-20 text-gray-500">
+
+    <div
+      v-else-if="events.length === 0"
+      class="flex flex-col items-center justify-center py-20 text-gray-500"
+    >
       <InboxIcon class="w-12 h-12 mb-4 text-gray-300" />
       <p class="text-lg">暂无事件记录</p>
     </div>
 
     <div v-else class="space-y-4 pb-20">
-      <div 
-        v-for="event in events" 
+      <div
+        v-for="event in events"
         :key="event.id"
         @click="router.push(`/events/${event.id}`)"
         class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#0D9488]/30 transition-all duration-200 cursor-pointer group"
       >
         <div class="flex justify-between items-start mb-2">
-          <h2 class="text-lg font-semibold text-[#134E4A] group-hover:text-[#0D9488] transition-colors line-clamp-1">{{ event.title }}</h2>
-          <span 
+          <h2
+            class="text-lg font-semibold text-[#134E4A] group-hover:text-[#0D9488] transition-colors line-clamp-1"
+          >
+            {{ event.title }}
+          </h2>
+          <span
             class="px-2.5 py-0.5 text-xs font-medium rounded-full whitespace-nowrap"
             :class="getStatusColor(event.status)"
           >
             {{ getStatusLabel(event.status) }}
           </span>
         </div>
-        
-        <p v-if="event.summary" class="text-sm text-gray-600 mb-3 line-clamp-2">{{ event.summary }}</p>
-        
+
+        <p v-if="event.summary" class="text-sm text-gray-600 mb-3 line-clamp-2">
+          {{ event.summary }}
+        </p>
+
         <div class="flex items-center justify-between text-xs text-gray-400">
           <div class="flex items-center space-x-3">
             <span v-if="event.event_date" class="flex items-center">
@@ -57,7 +66,7 @@
               {{ new Date(event.event_date).toLocaleDateString() }}
             </span>
           </div>
-          <button 
+          <button
             @click.stop="openEditModal(event)"
             class="p-1.5 text-gray-400 hover:text-[#0D9488] hover:bg-[#0D9488]/10 rounded transition-colors"
           >
@@ -78,7 +87,7 @@
     </div>
 
     <!-- Mobile FAB -->
-    <button 
+    <button
       @click="openCreateModal"
       class="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-[#F97316] text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 hover:bg-[#FB923C] active:scale-95 transition-all z-40 cursor-pointer"
     >
@@ -86,19 +95,28 @@
     </button>
 
     <!-- Create/Edit Modal -->
-    <n-modal v-model:show="showEventModal" preset="card" class="max-w-2xl" :title="editingEventId ? '编辑事件' : '新建事件'">
+    <n-modal
+      v-model:show="showEventModal"
+      preset="card"
+      class="max-w-2xl"
+      :title="editingEventId ? '编辑事件' : '新建事件'"
+    >
       <n-form ref="createFormRef" :model="eventForm" :rules="formRules">
-        
-        <div v-if="!editingEventId" class="mb-6 p-4 bg-[#F0FDFA] rounded-lg border border-[#14B8A6]/20">
-          <label class="block text-sm font-medium text-[#134E4A] mb-2">一键剪藏 (从 URL 导入)</label>
+        <div
+          v-if="!editingEventId"
+          class="mb-6 p-4 bg-[#F0FDFA] rounded-lg border border-[#14B8A6]/20"
+        >
+          <label class="block text-sm font-medium text-[#134E4A] mb-2"
+            >一键剪藏 (从 URL 导入)</label
+          >
           <div class="flex space-x-2">
-            <input 
-              v-model="importUrl" 
-              type="text" 
-              placeholder="https://..." 
+            <input
+              v-model="importUrl"
+              type="text"
+              placeholder="https://..."
               class="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0D9488]/50 focus:border-[#0D9488] transition-all"
             />
-            <button 
+            <button
               @click.prevent="handleImportUrl"
               :disabled="importing"
               class="px-4 py-2 bg-[#0D9488] hover:bg-[#14B8A6] text-white rounded-md font-medium transition-colors disabled:opacity-50 flex items-center cursor-pointer"
@@ -113,24 +131,39 @@
         <n-form-item label="标题" path="title">
           <n-input v-model:value="eventForm.title" placeholder="输入事件标题" size="large" />
         </n-form-item>
-        
+
         <n-form-item label="摘要" path="summary">
-          <n-input v-model:value="eventForm.summary" type="textarea" placeholder="简要描述事件" :rows="2" />
+          <n-input
+            v-model:value="eventForm.summary"
+            type="textarea"
+            placeholder="简要描述事件"
+            :rows="2"
+          />
         </n-form-item>
 
         <n-form-item label="详细内容 (Markdown)" path="content">
-          <n-input v-model:value="eventForm.content" type="textarea" placeholder="正文..." :rows="6" />
+          <n-input
+            v-model:value="eventForm.content"
+            type="textarea"
+            placeholder="正文..."
+            :rows="6"
+          />
         </n-form-item>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <n-form-item label="发生日期" path="event_date">
-            <n-date-picker v-model:value="eventForm.event_date" type="date" clearable class="w-full" />
+            <n-date-picker
+              v-model:value="eventForm.event_date"
+              type="date"
+              clearable
+              class="w-full"
+            />
           </n-form-item>
           <n-form-item label="来源链接" path="source_url">
             <n-input v-model:value="eventForm.source_url" placeholder="https://..." />
           </n-form-item>
         </div>
-        
+
         <!-- Tags placeholder -->
         <n-form-item label="标签" path="tags">
           <n-select
@@ -139,16 +172,21 @@
             filterable
             tag
             placeholder="输入按回车创建标签"
-            :options="[]" 
+            :options="[]"
           />
         </n-form-item>
       </n-form>
-      
+
       <template #footer>
         <div class="flex justify-end space-x-3">
-          <button @click="showEventModal = false" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer">取消</button>
-          <button 
-            @click="handleSave" 
+          <button
+            @click="showEventModal = false"
+            class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer"
+          >
+            取消
+          </button>
+          <button
+            @click="handleSave"
             :disabled="saving"
             class="px-6 py-2 bg-[#F97316] hover:bg-[#FB923C] text-white rounded-md font-medium transition-colors flex items-center cursor-pointer shadow-sm"
           >
@@ -167,7 +205,15 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import type { FormRules, FormInst } from 'naive-ui';
 import { useMessage } from 'naive-ui';
-import { Plus, Loader2, Calendar, Edit2, Inbox as InboxIcon, Download, Save } from 'lucide-vue-next';
+import {
+  Plus,
+  Loader2,
+  Calendar,
+  Edit2,
+  Inbox as InboxIcon,
+  Download,
+  Save,
+} from 'lucide-vue-next';
 import type { Event, EventStatus } from '@book-of-ages/shared';
 import { getEventList, createEvent, updateEvent } from '../api/eventApi';
 import { parseURL } from '../api/toolApi';
@@ -198,7 +244,7 @@ const eventForm = ref({
   content: '',
   event_date: null as number | null,
   source_url: '',
-  tags: [] as string[]
+  tags: [] as string[],
 });
 
 const formRules: FormRules = {
@@ -233,7 +279,7 @@ function openCreateModal() {
     content: '',
     event_date: null,
     source_url: '',
-    tags: []
+    tags: [],
   };
   importUrl.value = '';
   showEventModal.value = true;
@@ -247,7 +293,7 @@ function openEditModal(event: Event) {
     content: event.content || '',
     event_date: event.event_date ? new Date(event.event_date).getTime() : null,
     source_url: event.source_url || '',
-    tags: [] // Assuming tags aren't fully loaded in the list, or need separate logic
+    tags: [], // Assuming tags aren't fully loaded in the list, or need separate logic
   };
   importUrl.value = '';
   showEventModal.value = true;
@@ -261,7 +307,7 @@ async function loadEvents() {
   loading.value = true;
   try {
     const result = await getEventList({
-      status: statusFilter.value === 'all' ? undefined : statusFilter.value as EventStatus,
+      status: statusFilter.value === 'all' ? undefined : (statusFilter.value as EventStatus),
       page: currentPage.value,
       pageSize: 20,
     });
@@ -306,16 +352,18 @@ const createFormRef = ref<FormInst | null>(null);
 
 async function handleSave() {
   await createFormRef.value?.validate();
-  
+
   saving.value = true;
   try {
     const payload: any = {
       title: eventForm.value.title,
       summary: eventForm.value.summary || undefined,
       content: eventForm.value.content || undefined,
-      event_date: eventForm.value.event_date ? new Date(eventForm.value.event_date).toISOString() : undefined,
+      event_date: eventForm.value.event_date
+        ? new Date(eventForm.value.event_date).toISOString()
+        : undefined,
       source_url: eventForm.value.source_url || undefined,
-      tags: eventForm.value.tags // Send tags as array of strings
+      tags: eventForm.value.tags, // Send tags as array of strings
     };
 
     if (editingEventId.value) {
@@ -326,7 +374,7 @@ async function handleSave() {
       await createEvent({ ...payload, status: 'confirmed' });
       message.success('已成功收录');
     }
-    
+
     showEventModal.value = false;
     loadEvents();
   } catch (error: any) {

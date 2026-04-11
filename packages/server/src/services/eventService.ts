@@ -4,12 +4,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { get, all, run } from '../db';
-import type { 
-  Event, 
-  CreateEventInput, 
-  UpdateEventInput,
-  EventStatus 
-} from '@book-of-ages/shared';
+import type { Event, CreateEventInput, UpdateEventInput, EventStatus } from '@book-of-ages/shared';
 
 /**
  * 创建事件
@@ -19,20 +14,23 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
   const now = new Date().toISOString();
   const status = input.status || 'draft';
 
-  await run(`
+  await run(
+    `
     INSERT INTO events (id, title, summary, content, status, event_date, source_url, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [
-    id,
-    input.title,
-    input.summary || null,
-    input.content || null,
-    status,
-    input.event_date || null,
-    input.source_url || null,
-    now,
-    now,
-  ]);
+  `,
+    [
+      id,
+      input.title,
+      input.summary || null,
+      input.content || null,
+      status,
+      input.event_date || null,
+      input.source_url || null,
+      now,
+      now,
+    ]
+  );
 
   const event = await getEventById(id);
   if (!event) {
@@ -63,23 +61,30 @@ export async function listEvents(options?: {
   }
 
   if (options?.tagId) {
-    whereClause += ' AND EXISTS (SELECT 1 FROM event_tags et WHERE et.event_id = e.id AND et.tag_id = ?)';
+    whereClause +=
+      ' AND EXISTS (SELECT 1 FROM event_tags et WHERE et.event_id = e.id AND et.tag_id = ?)';
     params.push(options.tagId);
   }
 
   // 获取总数
-  const countResult = await get<{ count: number }>(`
+  const countResult = await get<{ count: number }>(
+    `
     SELECT COUNT(*) as count FROM events e ${whereClause}
-  `, params);
+  `,
+    params
+  );
   const total = countResult?.count || 0;
 
   // 获取数据
-  const events = await all<Event>(`
+  const events = await all<Event>(
+    `
     SELECT e.* FROM events e 
     ${whereClause}
     ORDER BY e.created_at DESC
     LIMIT ? OFFSET ?
-  `, [...params, pageSize, offset]);
+  `,
+    [...params, pageSize, offset]
+  );
 
   return { events, total };
 }
@@ -88,16 +93,23 @@ export async function listEvents(options?: {
  * 根据 ID 获取事件
  */
 export async function getEventById(id: string): Promise<Event | null> {
-  const result = await get<Event>(`
+  const result = await get<Event>(
+    `
     SELECT * FROM events WHERE id = ? AND deleted_at IS NULL
-  `, [id]);
+  `,
+    [id]
+  );
   return result || null;
 }
 
 /**
  * 更新事件
  */
-export async function updateEvent(id: string, input: UpdateEventInput, apiKeyId?: string): Promise<Event | null> {
+export async function updateEvent(
+  id: string,
+  input: UpdateEventInput,
+  apiKeyId?: string
+): Promise<Event | null> {
   const existingEvent = await getEventById(id);
   if (!existingEvent) {
     return null;
@@ -106,8 +118,10 @@ export async function updateEvent(id: string, input: UpdateEventInput, apiKeyId?
   // 如果事件已确认，且有 API Key 调用（Agent），禁止修改核心字段
   if (existingEvent.status === 'confirmed' && apiKeyId) {
     const restrictedFields = ['title', 'summary', 'content', 'event_date', 'source_url'];
-    const hasRestrictedUpdate = restrictedFields.some(field => input[field as keyof UpdateEventInput] !== undefined);
-    
+    const hasRestrictedUpdate = restrictedFields.some(
+      (field) => input[field as keyof UpdateEventInput] !== undefined
+    );
+
     if (hasRestrictedUpdate) {
       throw new Error('PERMISSION_DENIED: 已收录事件的核心字段不允许通过 API 修改');
     }
@@ -152,9 +166,12 @@ export async function updateEvent(id: string, input: UpdateEventInput, apiKeyId?
   values.push(now);
   values.push(id);
 
-  await run(`
+  await run(
+    `
     UPDATE events SET ${updates.join(', ')} WHERE id = ? AND deleted_at IS NULL
-  `, values);
+  `,
+    values
+  );
 
   return getEventById(id);
 }
@@ -165,11 +182,14 @@ export async function updateEvent(id: string, input: UpdateEventInput, apiKeyId?
 export async function deleteEvent(id: string): Promise<boolean> {
   const now = new Date().toISOString();
 
-  const result = await run(`
+  const result = await run(
+    `
     UPDATE events 
     SET deleted_at = ?, status = 'deleted', updated_at = ?
     WHERE id = ? AND deleted_at IS NULL
-  `, [now, now, id]);
+  `,
+    [now, now, id]
+  );
 
   return result.changes > 0;
 }

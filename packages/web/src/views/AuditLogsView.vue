@@ -22,7 +22,10 @@
       <Loader2 class="w-8 h-8 animate-spin text-[#0D9488]" />
     </div>
 
-    <div v-else-if="logs.length === 0" class="flex flex-col items-center justify-center py-32 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm">
+    <div
+      v-else-if="logs.length === 0"
+      class="flex flex-col items-center justify-center py-32 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm"
+    >
       <ScrollText class="w-16 h-16 mb-4 text-[#14B8A6]/40" />
       <p class="text-xl font-medium text-[#134E4A]">暂无操作日志</p>
     </div>
@@ -43,7 +46,9 @@
                 {{ log.action }}
               </span>
               <span class="text-sm font-medium text-[#134E4A]">{{ log.entity_type }}</span>
-              <span class="text-xs text-gray-400 font-mono">{{ log.entity_id.slice(0, 8) }}...</span>
+              <span class="text-xs text-gray-400 font-mono"
+                >{{ log.entity_id.slice(0, 8) }}...</span
+              >
             </div>
 
             <div class="flex items-center text-xs text-gray-500 space-x-4">
@@ -100,7 +105,7 @@ function formatDate(dateStr: string): string {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
   });
 }
 

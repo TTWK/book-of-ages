@@ -23,7 +23,7 @@ export async function parseURL(input: ParseURLInput): Promise<ParsedURLResult> {
   // 简化实现：返回基本信息
   // 在生产环境中，这里应该使用 puppeteer 或 @mozilla/readability
   // 来实际抓取和解析网页内容
-  
+
   try {
     // 尝试使用 fetch 获取网页内容（需要处理 CORS 和反爬虫）
     const response = await fetch(url, {
@@ -37,7 +37,7 @@ export async function parseURL(input: ParseURLInput): Promise<ParsedURLResult> {
     }
 
     const html = await response.text();
-    
+
     // 提取标题
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
     const title = titleMatch ? titleMatch[1].trim() : url;

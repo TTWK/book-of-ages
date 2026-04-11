@@ -17,10 +17,7 @@ export interface UploadMaterialData {
 /**
  * 获取事件的材料列表
  */
-export async function getMaterials(
-  eventId: string,
-  timelineNodeId?: string
-): Promise<Material[]> {
+export async function getMaterials(eventId: string, timelineNodeId?: string): Promise<Material[]> {
   const params: Record<string, string> = { event_id: eventId };
   if (timelineNodeId) {
     params.timeline_node_id = timelineNodeId;
@@ -42,7 +39,7 @@ export async function uploadMaterial(data: UploadMaterialData): Promise<Material
   const formData = new FormData();
   formData.append('event_id', data.event_id);
   formData.append('type', data.type);
-  
+
   if (data.timeline_node_id) {
     formData.append('timeline_node_id', data.timeline_node_id);
   }

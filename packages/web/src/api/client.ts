@@ -110,9 +110,7 @@ class ApiClient {
   async post<T>(url: string, data?: unknown): Promise<T> {
     try {
       const config = {
-        headers: data instanceof FormData
-          ? { 'Content-Type': 'multipart/form-data' }
-          : undefined,
+        headers: data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
       };
       const response = await this.client.post<ApiResponse<T>>(url, data, config);
       if (!response.data.success) {
@@ -135,9 +133,7 @@ class ApiClient {
   async put<T>(url: string, data?: unknown): Promise<T> {
     try {
       const config = {
-        headers: data instanceof FormData
-          ? { 'Content-Type': 'multipart/form-data' }
-          : undefined,
+        headers: data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
       };
       const response = await this.client.put<ApiResponse<T>>(url, data, config);
       if (!response.data.success) {

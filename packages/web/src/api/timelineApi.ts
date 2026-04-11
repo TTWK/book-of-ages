@@ -3,7 +3,11 @@
  */
 
 import apiClient from './client';
-import type { TimelineNode, CreateTimelineNodeInput, UpdateTimelineNodeInput } from '@book-of-ages/shared';
+import type {
+  TimelineNode,
+  CreateTimelineNodeInput,
+  UpdateTimelineNodeInput,
+} from '@book-of-ages/shared';
 
 /**
  * 获取事件的时间线节点列表

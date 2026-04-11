@@ -8,7 +8,7 @@ export default [
     ignores: [
       '**/dist/**',
       '**/node_modules/**',
-      '**/*.test.ts',
+      '**/packages/shared/**',
     ],
   },
   // 后端 TypeScript 配置
@@ -71,10 +71,5 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': 'warn',
     },
-  },
-  // 共享类型
-  {
-    files: ['packages/shared/src/**/*.ts'],
-    rules: {},
   },
 ];

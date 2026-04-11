@@ -30,10 +30,13 @@ export async function createAPIKey(input: CreateAPIKeyInput): Promise<APIKeyWith
   const keyHash = hashAPIKey(plainKey);
   const now = new Date().toISOString();
 
-  await run(`
+  await run(
+    `
     INSERT INTO api_keys (id, name, key_hash, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?)
-  `, [id, input.name, keyHash, now, now]);
+  `,
+    [id, input.name, keyHash, now, now]
+  );
 
   return {
     id,
@@ -60,11 +63,14 @@ export async function listAPIKeys(): Promise<Omit<APIKey, 'key_hash'>[]> {
  * 获取 API Key 信息
  */
 export async function getAPIKeyById(id: string): Promise<Omit<APIKey, 'key_hash'> | null> {
-  const result = await get<Omit<APIKey, 'key_hash'>>(`
+  const result = await get<Omit<APIKey, 'key_hash'>>(
+    `
     SELECT id, name, last_used, created_at, updated_at
     FROM api_keys
     WHERE id = ?
-  `, [id]);
+  `,
+    [id]
+  );
   return result || null;
 }
 
@@ -73,16 +79,22 @@ export async function getAPIKeyById(id: string): Promise<Omit<APIKey, 'key_hash'
  */
 export async function verifyAPIKey(key: string): Promise<APIKey | null> {
   const keyHash = hashAPIKey(key);
-  
-  const apiKey = await get<APIKey>(`
+
+  const apiKey = await get<APIKey>(
+    `
     SELECT * FROM api_keys WHERE key_hash = ?
-  `, [keyHash]);
-  
+  `,
+    [keyHash]
+  );
+
   if (apiKey) {
     // 更新最后使用时间
-    await run(`
+    await run(
+      `
       UPDATE api_keys SET last_used = ?, updated_at = ? WHERE id = ?
-    `, [new Date().toISOString(), new Date().toISOString(), apiKey.id]);
+    `,
+      [new Date().toISOString(), new Date().toISOString(), apiKey.id]
+    );
   }
 
   return apiKey || null;

@@ -83,7 +83,10 @@ export function closeDatabase(): Promise<void> {
 /**
  * 运行 SQL 语句（辅助函数）
  */
-export function run(sql: string, params: unknown[] = []): Promise<{ changes: number; lastInsertRowid: number }> {
+export function run(
+  sql: string,
+  params: unknown[] = []
+): Promise<{ changes: number; lastInsertRowid: number }> {
   return new Promise((resolve, reject) => {
     const database = getDatabase();
     database.run(sql, params, function (err) {

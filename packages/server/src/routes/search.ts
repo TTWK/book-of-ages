@@ -25,15 +25,18 @@ export async function searchRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Querystring: {
-        q: string;
-        type?: SearchType;
-        startDate?: string;
-        endDate?: string;
-        limit?: number;
-      };
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Querystring: {
+          q: string;
+          type?: SearchType;
+          startDate?: string;
+          endDate?: string;
+          limit?: number;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
       const { q, type, startDate, endDate, limit = 50 } = request.query;
 
       if (!q || q.trim() === '') {

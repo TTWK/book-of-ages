@@ -21,9 +21,12 @@ export async function toolRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Body: ParseURLInput;
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Body: ParseURLInput;
+      }>,
+      reply: FastifyReply
+    ) => {
       const { url } = request.body;
 
       if (!url || url.trim() === '') {

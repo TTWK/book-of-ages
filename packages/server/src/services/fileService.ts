@@ -16,7 +16,7 @@ function ensureUploadDir(): void {
   if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   }
-  
+
   // 创建各类子目录
   const types: MaterialType[] = ['image', 'video', 'pdf', 'snapshot', 'other'];
   for (const type of types) {
@@ -38,16 +38,16 @@ export async function saveUploadedFile(
   type: MaterialType
 ): Promise<string> {
   ensureUploadDir();
-  
+
   // 生成唯一文件名
   const ext = path.extname(file.filename);
   const filename = `${uuidv4()}${ext}`;
   const filePath = path.join(UPLOAD_DIR, type, filename);
-  
+
   // 保存文件
   const buffer = await file.toBuffer();
   fs.writeFileSync(filePath, buffer);
-  
+
   // 返回相对路径（用于数据库存储）
   return path.join('uploads', type, filename);
 }

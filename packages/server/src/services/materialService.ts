@@ -9,25 +9,30 @@ import type { Material, CreateMaterialInput } from '@book-of-ages/shared';
 /**
  * 创建材料记录
  */
-export async function createMaterial(input: CreateMaterialInput & { file_path: string }): Promise<Material> {
+export async function createMaterial(
+  input: CreateMaterialInput & { file_path: string }
+): Promise<Material> {
   const id = uuidv4();
   const now = new Date().toISOString();
 
-  await run(`
+  await run(
+    `
     INSERT INTO materials (id, event_id, timeline_node_id, type, title, file_path, source_url, content_text, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [
-    id,
-    input.event_id,
-    input.timeline_node_id || null,
-    input.type,
-    input.title || null,
-    input.file_path,
-    input.source_url || null,
-    input.content_text || null,
-    now,
-    now,
-  ]);
+  `,
+    [
+      id,
+      input.event_id,
+      input.timeline_node_id || null,
+      input.type,
+      input.title || null,
+      input.file_path,
+      input.source_url || null,
+      input.content_text || null,
+      now,
+      now,
+    ]
+  );
 
   const material = await getMaterialById(id);
   if (!material) {
@@ -41,32 +46,44 @@ export async function createMaterial(input: CreateMaterialInput & { file_path: s
  */
 export async function getMaterials(eventId: string, timelineNodeId?: string): Promise<Material[]> {
   if (timelineNodeId) {
-    return all<Material>(`
+    return all<Material>(
+      `
       SELECT * FROM materials
       WHERE event_id = ? AND timeline_node_id = ? AND deleted_at IS NULL
       ORDER BY created_at DESC
-    `, [eventId, timelineNodeId]);
+    `,
+      [eventId, timelineNodeId]
+    );
   }
-  
-  return all<Material>(`
+
+  return all<Material>(
+    `
     SELECT * FROM materials
     WHERE event_id = ? AND deleted_at IS NULL
     ORDER BY created_at DESC
-  `, [eventId]);
+  `,
+    [eventId]
+  );
 }
 
 /**
  * 根据 ID 获取材料
  */
 export async function getMaterialById(id: string): Promise<Material | null> {
-  const result = await get<Material>(`SELECT * FROM materials WHERE id = ? AND deleted_at IS NULL`, [id]);
+  const result = await get<Material>(
+    `SELECT * FROM materials WHERE id = ? AND deleted_at IS NULL`,
+    [id]
+  );
   return result || null;
 }
 
 /**
  * 更新材料
  */
-export async function updateMaterial(id: string, input: Partial<CreateMaterialInput>): Promise<Material | null> {
+export async function updateMaterial(
+  id: string,
+  input: Partial<CreateMaterialInput>
+): Promise<Material | null> {
   const now = new Date().toISOString();
 
   const updates: string[] = [];
@@ -93,9 +110,12 @@ export async function updateMaterial(id: string, input: Partial<CreateMaterialIn
   values.push(now);
   values.push(id);
 
-  await run(`
+  await run(
+    `
     UPDATE materials SET ${updates.join(', ')} WHERE id = ?
-  `, values);
+  `,
+    values
+  );
 
   return getMaterialById(id);
 }
@@ -105,8 +125,11 @@ export async function updateMaterial(id: string, input: Partial<CreateMaterialIn
  */
 export async function deleteMaterial(id: string): Promise<boolean> {
   const now = new Date().toISOString();
-  const result = await run(`
+  const result = await run(
+    `
     UPDATE materials SET deleted_at = ?, updated_at = ? WHERE id = ?
-  `, [now, now, id]);
+  `,
+    [now, now, id]
+  );
   return result.changes > 0;
 }

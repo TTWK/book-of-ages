@@ -16,23 +16,22 @@ import type { CreateTagInput, UpdateTagInput } from '@book-of-ages/shared';
 
 export async function tagRoutes(fastify: FastifyInstance): Promise<void> {
   // 获取标签列表
-  fastify.get(
-    '/api/tags',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const tags = await listTags();
+  fastify.get('/api/tags', async (request: FastifyRequest, reply: FastifyReply) => {
+    const tags = await listTags();
 
-      // 为每个标签添加事件数量
-      const tagsWithCount = await Promise.all(tags.map(async tag => ({
+    // 为每个标签添加事件数量
+    const tagsWithCount = await Promise.all(
+      tags.map(async (tag) => ({
         ...tag,
         eventCount: await getTagEventCount(tag.id),
-      })));
+      }))
+    );
 
-      reply.send({
-        success: true,
-        data: tagsWithCount,
-      });
-    }
-  );
+    reply.send({
+      success: true,
+      data: tagsWithCount,
+    });
+  });
 
   // 创建标签
   fastify.post(
@@ -50,9 +49,12 @@ export async function tagRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Body: CreateTagInput;
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Body: CreateTagInput;
+      }>,
+      reply: FastifyReply
+    ) => {
       const input = request.body;
 
       // 验证名称
@@ -121,10 +123,13 @@ export async function tagRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Params: { id: string };
-      Body: UpdateTagInput;
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: UpdateTagInput;
+      }>,
+      reply: FastifyReply
+    ) => {
       const tag = await getTagById(request.params.id);
 
       if (!tag) {

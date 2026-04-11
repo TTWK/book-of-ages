@@ -1,7 +1,7 @@
 /**
  * 事件 API 路由
  * 包含事件 CRUD、时间线节点和材料管理
- * 
+ *
  * 注意：路由注册顺序很重要！
  * 更具体的路由（如 /:id/timeline）必须注册在通用路由（如 /:id）之前
  */
@@ -14,10 +14,7 @@ import {
   updateEvent,
   deleteEvent,
 } from '../services/eventService';
-import {
-  getEventTags,
-  updateEventTags,
-} from '../services/tagService';
+import { getEventTags, updateEventTags } from '../services/tagService';
 import { logOperation, logUIOperation } from '../services/operationLogService';
 import {
   createTimelineNode,
@@ -87,9 +84,12 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Body: CreateTimelineNodeInput & { event_id: string };
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Body: CreateTimelineNodeInput & { event_id: string };
+      }>,
+      reply: FastifyReply
+    ) => {
       const { event_id, ...input } = request.body;
       const event = await getEventById(event_id);
       if (!event) {
@@ -128,10 +128,13 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Params: { nodeId: string };
-      Body: UpdateTimelineNodeInput;
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Params: { nodeId: string };
+        Body: UpdateTimelineNodeInput;
+      }>,
+      reply: FastifyReply
+    ) => {
       const node = await getTimelineNodeById(request.params.nodeId);
       if (!node) {
         reply.code(404).send({
@@ -170,9 +173,12 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
   // 获取事件的材料列表
   fastify.get(
     '/api/materials',
-    async (request: FastifyRequest<{
-      Querystring: { event_id: string; timeline_node_id?: string };
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Querystring: { event_id: string; timeline_node_id?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
       const eventId = request.query.event_id;
       if (!eventId) {
         reply.code(400).send({
@@ -213,15 +219,18 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Body: {
-        event_id: string;
-        timeline_node_id?: string;
-        type: MaterialType;
-        title?: string;
-        source_url?: string;
-      };
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Body: {
+          event_id: string;
+          timeline_node_id?: string;
+          type: MaterialType;
+          title?: string;
+          source_url?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
       const { event_id, timeline_node_id, type, title, source_url } = request.body;
 
       const event = await getEventById(event_id);
@@ -328,7 +337,7 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
       }
 
       const mimeType = getMimeType(filePath);
-      
+
       // 读取并发送文件
       const fileContent = fs.readFileSync(filePath);
       reply.type(mimeType).send(fileContent);
@@ -350,10 +359,13 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Params: { id: string };
-      Body: { title?: string; source_url?: string; content_text?: string };
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: { title?: string; source_url?: string; content_text?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
       const material = await getMaterialById(request.params.id);
       if (!material) {
         reply.code(404).send({
@@ -408,14 +420,17 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Querystring: {
-        status?: EventStatus;
-        tag?: string;
-        page?: number;
-        pageSize?: number;
-      };
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Querystring: {
+          status?: EventStatus;
+          tag?: string;
+          page?: number;
+          pageSize?: number;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
       const { status, tag, page = 1, pageSize = 20 } = request.query;
       const result = await listEvents({ status, tagId: tag, page, pageSize });
       const totalPages = Math.ceil(result.total / pageSize);
@@ -477,7 +492,7 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
     {
       constraints: {
         // 使用正则约束匹配 UUID 格式
-      }
+      },
     },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const id = request.params.id;
@@ -490,7 +505,7 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         });
         return;
       }
-      
+
       const event = await getEventById(id);
       if (!event) {
         reply.code(404).send({
@@ -521,10 +536,13 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Params: { id: string };
-      Body: UpdateEventInput;
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: UpdateEventInput;
+      }>,
+      reply: FastifyReply
+    ) => {
       const event = await getEventById(request.params.id);
       if (!event) {
         reply.code(404).send({
@@ -629,10 +647,13 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{
-      Params: { id: string };
-      Body: { tagIds: string[] };
-    }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: { tagIds: string[] };
+      }>,
+      reply: FastifyReply
+    ) => {
       const event = await getEventById(request.params.id);
       if (!event) {
         reply.code(404).send({

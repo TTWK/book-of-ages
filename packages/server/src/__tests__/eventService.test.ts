@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createEvent, listEvents, updateEvent, deleteEvent, getEventById } from '../services/eventService';
+import {
+  createEvent,
+  listEvents,
+  updateEvent,
+  deleteEvent,
+  getEventById,
+} from '../services/eventService';
 import { initDatabase, closeDatabase } from '../db';
 
 describe('eventService', () => {

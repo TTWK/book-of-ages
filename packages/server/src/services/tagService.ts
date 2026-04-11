@@ -13,17 +13,13 @@ export async function createTag(input: CreateTagInput): Promise<Tag> {
   const id = uuidv4();
   const now = new Date().toISOString();
 
-  await run(`
+  await run(
+    `
     INSERT INTO tags (id, name, parent_id, color, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?)
-  `, [
-    id,
-    input.name,
-    input.parent_id || null,
-    input.color || null,
-    now,
-    now,
-  ]);
+  `,
+    [id, input.name, input.parent_id || null, input.color || null, now, now]
+  );
 
   const tag = await getTagById(id);
   if (!tag) {
@@ -77,9 +73,12 @@ export async function updateTag(id: string, input: UpdateTagInput): Promise<Tag 
   values.push(now);
   values.push(id);
 
-  await run(`
+  await run(
+    `
     UPDATE tags SET ${updates.join(', ')} WHERE id = ?
-  `, values);
+  `,
+    values
+  );
 
   return getTagById(id);
 }
@@ -96,9 +95,12 @@ export async function deleteTag(id: string): Promise<boolean> {
  * 获取标签下的事件数量
  */
 export async function getTagEventCount(tagId: string): Promise<number> {
-  const result = await get<{ count: number }>(`
+  const result = await get<{ count: number }>(
+    `
     SELECT COUNT(*) as count FROM event_tags WHERE tag_id = ?
-  `, [tagId]);
+  `,
+    [tagId]
+  );
   return result?.count || 0;
 }
 
@@ -106,30 +108,39 @@ export async function getTagEventCount(tagId: string): Promise<number> {
  * 为事件添加标签
  */
 export async function addTagToEvent(eventId: string, tagId: string): Promise<void> {
-  await run(`
+  await run(
+    `
     INSERT OR IGNORE INTO event_tags (event_id, tag_id)
     VALUES (?, ?)
-  `, [eventId, tagId]);
+  `,
+    [eventId, tagId]
+  );
 }
 
 /**
  * 移除事件的标签
  */
 export async function removeTagFromEvent(eventId: string, tagId: string): Promise<void> {
-  await run(`
+  await run(
+    `
     DELETE FROM event_tags WHERE event_id = ? AND tag_id = ?
-  `, [eventId, tagId]);
+  `,
+    [eventId, tagId]
+  );
 }
 
 /**
  * 获取事件的所有标签
  */
 export async function getEventTags(eventId: string): Promise<Tag[]> {
-  return all<Tag>(`
+  return all<Tag>(
+    `
     SELECT t.* FROM tags t
     INNER JOIN event_tags et ON t.id = et.tag_id
     WHERE et.event_id = ?
-  `, [eventId]);
+  `,
+    [eventId]
+  );
 }
 
 /**
@@ -138,11 +149,11 @@ export async function getEventTags(eventId: string): Promise<Tag[]> {
 export async function updateEventTags(eventId: string, tagIds: string[]): Promise<void> {
   const queries = [
     { sql: 'DELETE FROM event_tags WHERE event_id = ?', params: [eventId] },
-    ...tagIds.map(tagId => ({
+    ...tagIds.map((tagId) => ({
       sql: 'INSERT OR IGNORE INTO event_tags (event_id, tag_id) VALUES (?, ?)',
-      params: [eventId, tagId]
-    }))
+      params: [eventId, tagId],
+    })),
   ];
 
-  await import('../db').then(db => db.transaction(queries));
+  await import('../db').then((db) => db.transaction(queries));
 }

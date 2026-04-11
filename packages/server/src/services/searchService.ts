@@ -36,7 +36,7 @@ export async function simpleSearch(
     // 转义 FTS5 特殊字符
     return query.replace(/["\\]/g, '\\$&');
   };
-  
+
   const ftsQuery = escapeFtsQuery(keyword);
 
   // 搜索事件（使用 FTS5）
@@ -108,12 +108,15 @@ export async function simpleSearch(
     } catch (error) {
       // FTS5 查询失败时，回退到 LIKE 查询
       const searchPattern = `%${keyword}%`;
-      results.materials = await all<Material>(`
+      results.materials = await all<Material>(
+        `
         SELECT * FROM materials
         WHERE deleted_at IS NULL
           AND (title LIKE ? OR content_text LIKE ?)
         LIMIT ?
-      `, [searchPattern, searchPattern, limit]);
+      `,
+        [searchPattern, searchPattern, limit]
+      );
     }
   }
 
@@ -134,11 +137,14 @@ export async function simpleSearch(
     } catch (error) {
       // FTS5 查询失败时，回退到 LIKE 查询
       const searchPattern = `%${keyword}%`;
-      results.timelineNodes = await all<TimelineNode>(`
+      results.timelineNodes = await all<TimelineNode>(
+        `
         SELECT * FROM event_timeline_nodes
         WHERE title LIKE ? OR description LIKE ?
         LIMIT ?
-      `, [searchPattern, searchPattern, limit]);
+      `,
+        [searchPattern, searchPattern, limit]
+      );
     }
   }
 

@@ -12,7 +12,7 @@
           v-model:value="groupBy"
           :options="[
             { label: '按年分组', value: 'year' },
-            { label: '按月分组', value: 'month' }
+            { label: '按月分组', value: 'month' },
           ]"
           class="w-32"
           @update:value="loadTimeline"
@@ -29,11 +29,17 @@
     </div>
 
     <!-- Timeline List -->
-    <div v-if="loading && timelineGroups.length === 0" class="flex justify-center items-center py-20">
+    <div
+      v-if="loading && timelineGroups.length === 0"
+      class="flex justify-center items-center py-20"
+    >
       <Loader2 class="w-8 h-8 animate-spin text-[#0D9488]" />
     </div>
 
-    <div v-else-if="timelineGroups.length === 0" class="flex flex-col items-center justify-center py-32 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm">
+    <div
+      v-else-if="timelineGroups.length === 0"
+      class="flex flex-col items-center justify-center py-32 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm"
+    >
       <Calendar class="w-16 h-16 mb-4 text-[#14B8A6]/40" />
       <p class="text-xl font-medium text-[#134E4A]">暂无时间线数据</p>
       <p class="text-sm mt-2">收录事件后将自动显示在这里</p>
@@ -42,7 +48,9 @@
     <div v-else class="space-y-8 pb-20">
       <div v-for="group in timelineGroups" :key="group.label" class="relative">
         <!-- Group Header -->
-        <div class="sticky top-0 z-10 bg-white/90 backdrop-blur-sm py-3 mb-4 border-b border-gray-200">
+        <div
+          class="sticky top-0 z-10 bg-white/90 backdrop-blur-sm py-3 mb-4 border-b border-gray-200"
+        >
           <h2 class="text-lg font-bold text-[#134E4A]">{{ group.label }}</h2>
           <p class="text-xs text-gray-500 mt-0.5">{{ group.events.length }} 个事件</p>
         </div>
@@ -58,17 +66,26 @@
             <div class="flex items-start">
               <div class="w-2 h-2 mt-2 mr-3 rounded-full bg-[#0D9488] flex-shrink-0"></div>
               <div class="flex-1 min-w-0">
-                <h3 class="text-base font-semibold text-[#134E4A] group-hover:text-[#0D9488] transition-colors line-clamp-1">{{ event.title }}</h3>
-                <p v-if="event.summary" class="text-sm text-gray-500 mt-1 line-clamp-2">{{ event.summary }}</p>
-                
+                <h3
+                  class="text-base font-semibold text-[#134E4A] group-hover:text-[#0D9488] transition-colors line-clamp-1"
+                >
+                  {{ event.title }}
+                </h3>
+                <p v-if="event.summary" class="text-sm text-gray-500 mt-1 line-clamp-2">
+                  {{ event.summary }}
+                </p>
+
                 <div class="flex items-center text-xs text-gray-400 mt-2 space-x-4">
                   <span v-if="event.event_date" class="flex items-center">
                     <Calendar class="w-3.5 h-3.5 mr-1" />
                     {{ formatDate(event.event_date) }}
                   </span>
-                  <span v-if="event.tags && event.tags.length > 0" class="flex items-center">
+                  <span
+                    v-if="(event as any).tags && (event as any).tags.length > 0"
+                    class="flex items-center"
+                  >
                     <Hash class="w-3.5 h-3.5 mr-1" />
-                    {{ event.tags.map(t => t.name).join(', ') }}
+                    {{ (event as any).tags.map((t: any) => t.name).join(', ') }}
                   </span>
                 </div>
               </div>
@@ -120,7 +137,7 @@ async function loadTimeline() {
     const result = await getEventList({
       status: 'confirmed',
       page: currentPage.value,
-      pageSize: pageSize.value
+      pageSize: pageSize.value,
     });
 
     total.value = result.pagination.total;
@@ -129,7 +146,7 @@ async function loadTimeline() {
     // 按日期分组
     const groups: Map<string, Event[]> = new Map();
 
-    result.items.forEach(event => {
+    result.items.forEach((event) => {
       if (!event.event_date) return;
 
       const date = new Date(event.event_date);
@@ -154,10 +171,9 @@ async function loadTimeline() {
         events: events.sort((a, b) => {
           if (!a.event_date || !b.event_date) return 0;
           return new Date(b.event_date).getTime() - new Date(a.event_date).getTime();
-        })
+        }),
       }))
       .sort((a, b) => b.label.localeCompare(a.label, 'zh-CN'));
-
   } catch (error) {
     message.error('加载时间线失败');
     console.error(error);

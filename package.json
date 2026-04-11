@@ -10,7 +10,10 @@
     "dev:server": "npm run dev -w @book-of-ages/server",
     "build": "npm run build --workspaces",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "lint": "npm run lint -w @book-of-ages/server && npm run lint -w @book-of-ages/web",
+    "lint:fix": "npm run lint:fix -w @book-of-ages/server && npm run lint:fix -w @book-of-ages/web",
+    "typecheck": "npm run typecheck -w @book-of-ages/server && npm run typecheck -w @book-of-ages/web"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",

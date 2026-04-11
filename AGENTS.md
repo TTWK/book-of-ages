@@ -10,12 +10,12 @@
 
 ## 技术栈
 
-| 层级 | 技术 |
-|------|------|
+| 层级 | 技术                            |
+| ---- | ------------------------------- |
 | 前端 | Vue 3 + Vite + Naive UI + Pinia |
-| 后端 | Fastify (TypeScript) |
-| 存储 | SQLite (sqlite3) |
-| 共享 | TypeScript 类型定义 |
+| 后端 | Fastify (TypeScript)            |
+| 存储 | SQLite (sqlite3)                |
+| 共享 | TypeScript 类型定义             |
 
 ## 项目结构
 
@@ -203,3 +203,54 @@ A:
 ### Q: 数据库 Schema 变更如何处理？
 
 A: 修改 `packages/server/src/db/schema.ts`，系统会在启动时自动执行新 Schema（使用 CREATE TABLE IF NOT EXISTS，不会破坏现有数据）。
+
+## 开发规范与 CI/CD
+
+### 提交规范
+
+所有 commit message 必须遵循 [Conventional Commits](https://www.conventionalcommits.org/) 格式：
+
+```
+<type>(scope): <description>
+```
+
+- `type`: feat, fix, docs, style, refactor, test, chore
+- `scope`（可选）: 影响范围，如 server, web, db
+- 提交时会自动检查格式，不符合将被拒绝
+
+### 提交前自动检查
+
+`git commit` 时会自动执行：
+
+- **Prettier**：自动格式化暂存的文件
+- **ESLint**：自动修复可修复的问题
+- **Commitlint**：检查 commit message 格式
+
+如有无法自动修复的错误，提交会被拒绝，需要手动修复后重试。
+
+### 常用命令
+
+```bash
+npm run format        # 格式化所有代码
+npm run format:check  # 检查格式化（不修改文件）
+npm run lint          # 检查代码质量
+npm run lint:fix      # 自动修复代码质量问题
+npm run typecheck     # TypeScript 类型检查
+npm run test          # 运行所有测试
+```
+
+### 分支规范
+
+- 不要直接在 `main` 上提交代码
+- 每个功能/修复开独立分支：`feat/xxx`, `fix/xxx`, `refactor/xxx`
+- 完成后通过 Pull Request 合入 `main`
+- PR 必须通过 CI 检查（lint + typecheck + test + build）
+
+### AI 开发指令
+
+当实现新功能或修复 Bug 时：
+
+1. 先写测试（TDD）
+2. 实现代码使测试通过
+3. 运行 `npm run lint && npm run typecheck && npm run test && npm run build` 全部通过后再提交
+4. 每个测试应覆盖：正常输入、边界情况、错误情况

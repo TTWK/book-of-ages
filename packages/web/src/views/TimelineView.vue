@@ -3,8 +3,8 @@
     <!-- Header Area -->
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-[#134E4A] tracking-tight">时间线</h1>
-        <p class="text-sm text-gray-500 mt-1">按时间顺序浏览事件</p>
+        <h1 class="text-2xl font-bold text-text-main tracking-tight">时间线</h1>
+        <p class="text-sm text-neutral-500 mt-1">按时间顺序浏览事件</p>
       </div>
 
       <div class="flex items-center space-x-3">
@@ -20,7 +20,7 @@
         <button
           @click="loadTimeline"
           :disabled="loading"
-          class="flex items-center px-3 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-md font-medium transition-colors duration-200 cursor-pointer disabled:opacity-50 shadow-sm"
+          class="flex items-center px-3 py-2 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-700 rounded-md font-medium transition-colors duration-200 cursor-pointer disabled:opacity-50 shadow-sm"
         >
           <RefreshCw class="w-4 h-4 mr-1" :class="{ 'animate-spin': loading }" />
           刷新
@@ -29,30 +29,25 @@
     </div>
 
     <!-- Timeline List -->
-    <div
-      v-if="loading && timelineGroups.length === 0"
-      class="flex justify-center items-center py-20"
-    >
-      <Loader2 class="w-8 h-8 animate-spin text-[#0D9488]" />
-    </div>
+    <LoadingSkeleton v-if="loading && timelineGroups.length === 0" type="cards" :count="3" />
 
-    <div
+    <EmptyState
       v-else-if="timelineGroups.length === 0"
-      class="flex flex-col items-center justify-center py-32 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm"
-    >
-      <Calendar class="w-16 h-16 mb-4 text-[#14B8A6]/40" />
-      <p class="text-xl font-medium text-[#134E4A]">暂无时间线数据</p>
-      <p class="text-sm mt-2">收录事件后将自动显示在这里</p>
-    </div>
+      :icon="Calendar"
+      title="暂无时间线数据"
+      description="收录事件后将自动显示在这里"
+      icon-bg-class="bg-primary-100"
+      icon-color-class="text-primary-500/40"
+    />
 
     <div v-else class="space-y-8 pb-20">
       <div v-for="group in timelineGroups" :key="group.label" class="relative">
         <!-- Group Header -->
         <div
-          class="sticky top-0 z-10 bg-white/90 backdrop-blur-sm py-3 mb-4 border-b border-gray-200"
+          class="sticky top-0 z-10 bg-white/90 backdrop-blur-sm py-3 mb-4 border-b border-neutral-200"
         >
-          <h2 class="text-lg font-bold text-[#134E4A]">{{ group.label }}</h2>
-          <p class="text-xs text-gray-500 mt-0.5">{{ group.events.length }} 个事件</p>
+          <h2 class="text-lg font-bold text-text-main">{{ group.label }}</h2>
+          <p class="text-xs text-neutral-500 mt-0.5">{{ group.events.length }} 个事件</p>
         </div>
 
         <!-- Events in Group -->
@@ -60,22 +55,22 @@
           <div
             v-for="event in group.events"
             :key="event.id"
-            class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 group cursor-pointer"
+            class="bg-white p-4 rounded-xl border border-neutral-100 shadow-sm hover:shadow-md transition-shadow duration-200 group cursor-pointer"
             @click="openEvent(event.id)"
           >
             <div class="flex items-start">
-              <div class="w-2 h-2 mt-2 mr-3 rounded-full bg-[#0D9488] flex-shrink-0"></div>
+              <div class="w-2 h-2 mt-2 mr-3 rounded-full bg-primary-600 flex-shrink-0"></div>
               <div class="flex-1 min-w-0">
                 <h3
-                  class="text-base font-semibold text-[#134E4A] group-hover:text-[#0D9488] transition-colors line-clamp-1"
+                  class="text-base font-semibold text-text-main group-hover:text-primary-600 transition-colors line-clamp-1"
                 >
                   {{ event.title }}
                 </h3>
-                <p v-if="event.summary" class="text-sm text-gray-500 mt-1 line-clamp-2">
+                <p v-if="event.summary" class="text-sm text-neutral-500 mt-1 line-clamp-2">
                   {{ event.summary }}
                 </p>
 
-                <div class="flex items-center text-xs text-gray-400 mt-2 space-x-4">
+                <div class="flex items-center text-xs text-neutral-400 mt-2 space-x-4">
                   <span v-if="event.event_date" class="flex items-center">
                     <Calendar class="w-3.5 h-3.5 mr-1" />
                     {{ formatDate(event.event_date) }}
@@ -111,9 +106,10 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
-import { Loader2, RefreshCw, Calendar, Hash } from 'lucide-vue-next';
+import { RefreshCw, Calendar, Hash } from 'lucide-vue-next';
 import type { Event } from '@book-of-ages/shared';
 import { getEventList } from '../api/eventApi';
+import { LoadingSkeleton, EmptyState } from '../components/ui';
 
 interface TimelineGroup {
   label: string;

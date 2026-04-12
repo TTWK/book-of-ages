@@ -3,19 +3,28 @@
     <!-- Header Area -->
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-[#134E4A] tracking-tight">标签管理</h1>
-        <p class="text-sm text-gray-500 mt-1">事件聚合与分类</p>
+        <h1 class="text-2xl font-bold text-text-main tracking-tight">标签管理</h1>
+        <p class="text-sm text-neutral-500 mt-1">事件聚合与分类</p>
       </div>
       <button
         @click="handleCreate()"
-        class="flex items-center px-4 py-2 bg-[#F97316] hover:bg-[#FB923C] text-white rounded-md font-medium transition-colors duration-200 cursor-pointer shadow-sm shadow-orange-500/20"
+        class="flex items-center px-4 py-2 bg-cta-500 hover:bg-cta-400 text-white rounded-md font-medium transition-colors duration-200 cursor-pointer shadow-sm shadow-cta-500/20"
       >
         <Plus class="w-5 h-5 mr-1" />
         新建标签
       </button>
     </div>
 
-    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+    <EmptyState
+      v-if="tags.length === 0"
+      :icon="Tags"
+      title="暂无标签数据"
+      description="创建标签来组织你的事件"
+      icon-bg-class="bg-primary-100"
+      icon-color-class="text-primary-500/40"
+    />
+
+    <div v-else class="bg-white rounded-2xl p-6 border border-neutral-100 shadow-sm">
       <n-tree
         :data="treeData"
         :render-prefix="renderPrefix"
@@ -26,7 +35,6 @@
         label-field="name"
         class="custom-tree"
       />
-      <div v-if="tags.length === 0" class="text-center py-12 text-gray-400">暂无标签数据</div>
     </div>
 
     <!-- 创建/编辑标签 Modal -->
@@ -38,15 +46,15 @@
     >
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">名称 *</label>
+          <label class="block text-sm font-medium text-neutral-700 mb-1">名称 *</label>
           <input
             v-model="formData.name"
-            class="w-full p-2 border border-gray-200 rounded-md outline-none focus:border-[#0D9488]"
+            class="w-full p-2 border border-neutral-200 rounded-md outline-none focus:border-primary-600"
             placeholder="标签名称"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">父标签 (可选)</label>
+          <label class="block text-sm font-medium text-neutral-700 mb-1">父标签 (可选)</label>
           <n-select
             v-model:value="formData.parent_id"
             :options="parentTagOptions"
@@ -55,7 +63,7 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">颜色</label>
+          <label class="block text-sm font-medium text-neutral-700 mb-1">颜色</label>
           <n-color-picker v-model:value="formData.color" />
         </div>
       </div>
@@ -63,14 +71,14 @@
         <div class="flex justify-end space-x-3">
           <button
             @click="showModal = false"
-            class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+            class="px-4 py-2 text-neutral-600 bg-neutral-100 rounded-md hover:bg-neutral-200 transition-colors"
           >
             取消
           </button>
           <button
             @click="handleSubmit"
             :disabled="saving"
-            class="px-4 py-2 text-white bg-[#0D9488] hover:bg-[#14B8A6] rounded-md transition-colors flex items-center"
+            class="px-4 py-2 text-white bg-primary-600 hover:bg-primary-500 rounded-md transition-colors flex items-center"
           >
             <Loader2 v-if="saving" class="w-4 h-4 mr-2 animate-spin" />
             保存
@@ -83,11 +91,12 @@
 
 <script setup lang="ts">
 import { ref, computed, h, onMounted } from 'vue';
-import type { TreeOption } from '../naive-ui';
+import type { TreeOption } from 'naive-ui';
 import { NPopconfirm, useMessage } from 'naive-ui';
-import { Plus, Edit2, Trash2, Loader2 } from 'lucide-vue-next';
+import { Plus, Edit2, Trash2, Loader2, Tags } from 'lucide-vue-next';
 import type { Tag } from '@book-of-ages/shared';
 import { getTagList, createTag, updateTag, deleteTag } from '../api/tagApi';
+import { EmptyState } from '../components/ui';
 
 const message = useMessage();
 
@@ -152,7 +161,7 @@ function renderPrefix(option: TreeOption) {
       ? h(
           'span',
           {
-            class: 'ml-2 text-xs text-gray-500',
+            class: 'ml-2 text-xs text-neutral-500',
           },
           `(${tag.eventCount})`
         )
@@ -173,7 +182,7 @@ function renderSuffix(option: TreeOption) {
       h(
         'button',
         {
-          class: 'p-1 text-gray-400 hover:text-[#0D9488] rounded transition-colors',
+          class: 'p-1 text-neutral-400 hover:text-primary-600 rounded transition-colors',
           onClick: (e: Event) => {
             e.stopPropagation();
             handleEdit(tag);
@@ -192,7 +201,7 @@ function renderSuffix(option: TreeOption) {
             h(
               'button',
               {
-                class: 'p-1 text-gray-400 hover:text-red-500 rounded transition-colors',
+                class: 'p-1 text-neutral-400 hover:text-error-500 rounded transition-colors',
                 onClick: (e: Event) => e.stopPropagation(),
               },
               [h(Trash2, { class: 'w-4 h-4' })]
@@ -230,7 +239,7 @@ async function handleSubmit() {
     }
     showModal.value = false;
     loadTags();
-  } catch (error) {
+  } catch (_error) {
     message.error('操作失败');
   } finally {
     saving.value = false;
@@ -242,7 +251,7 @@ async function handleDelete(tag: Tag) {
     await deleteTag(tag.id);
     message.success('删除成功');
     loadTags();
-  } catch (error) {
+  } catch (_error) {
     message.error('删除失败');
   }
 }
@@ -250,7 +259,7 @@ async function handleDelete(tag: Tag) {
 async function loadTags() {
   try {
     tags.value = await getTagList();
-  } catch (error) {
+  } catch (_error) {
     message.error('加载标签失败');
   }
 }

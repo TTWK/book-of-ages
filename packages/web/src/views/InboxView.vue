@@ -171,8 +171,12 @@ import {
 import type { Event } from '@book-of-ages/shared';
 import { getEventList, updateEvent } from '../api/eventApi';
 import { EmptyState, LoadingSkeleton, StatusBadge } from '../components/ui';
+import { useCommonUndoActions } from '../composables/useUndo';
 
 const message = useMessage();
+
+// Undo 功能
+const { archiveEvent } = useCommonUndoActions(message);
 
 const events = ref<Event[]>([]);
 const loading = ref(false);
@@ -212,15 +216,21 @@ async function handleConfirm(event: Event | null) {
 
 async function handleArchive(event: Event | null) {
   if (!event) return;
-  try {
-    await updateEvent(event.id, { status: 'archived' });
-    message.success('已归档事件');
-    showPreview.value = false;
-    events.value = events.value.filter((e) => e.id !== event.id);
-  } catch (error) {
-    message.error('归档失败');
-    console.error(error);
-  }
+  await archiveEvent(
+    event.id,
+    async () => {
+      await updateEvent(event.id, { status: 'archived' });
+      events.value = events.value.filter((e) => e.id !== event.id);
+    },
+    async () => {
+      await updateEvent(event.id, { status: 'draft' });
+      events.value = [...events.value, event].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    },
+    '事件'
+  );
+  showPreview.value = false;
 }
 
 onMounted(() => {

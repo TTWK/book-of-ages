@@ -1,14 +1,12 @@
 <template>
-  <div v-if="loading && !event" class="flex justify-center items-center py-32">
-    <Loader2 class="w-8 h-8 animate-spin text-[#0D9488]" />
-  </div>
+  <LoadingSkeleton v-if="loading && !event" type="detail" />
 
   <div v-else-if="event" class="relative pb-24 md:pb-10">
     <!-- Mobile Back Button -->
     <div class="md:hidden flex items-center mb-4">
       <button
         @click="handleBack"
-        class="flex items-center text-[#0D9488] font-medium p-2 -ml-2 hover:bg-[#0D9488]/10 rounded-lg transition-colors"
+        class="flex items-center text-text-primary-600 font-medium p-2 -ml-2 hover:bg-primary-600/10 rounded-lg transition-colors"
       >
         <ArrowLeft class="w-5 h-5 mr-1" />
         返回
@@ -18,28 +16,23 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
       <!-- Main Content Area (Left 70% on Desktop) -->
       <div class="lg:col-span-8 space-y-6">
-        <div class="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm">
+        <div class="bg-white rounded-2xl p-6 md:p-8 border border-neutral-100 shadow-sm">
           <!-- Header -->
           <div class="flex justify-between items-start mb-6">
             <div class="flex-1">
               <div v-if="isEditing">
                 <input
                   v-model="editForm.title"
-                  class="w-full text-2xl font-bold text-[#134E4A] border-b-2 border-[#0D9488]/30 focus:border-[#0D9488] outline-none pb-1 bg-transparent transition-colors"
+                  class="w-full text-2xl font-bold text-text-main border-b-2 border-primary-600/30 focus:border-primary-600 outline-none pb-1 bg-transparent transition-colors"
                   placeholder="事件标题"
                 />
               </div>
-              <h1 v-else class="text-2xl md:text-3xl font-bold text-[#134E4A] leading-tight">
+              <h1 v-else class="text-2xl md:text-3xl font-bold text-text-main leading-tight">
                 {{ event.title }}
               </h1>
 
-              <div class="flex flex-wrap items-center gap-3 mt-4 text-sm text-gray-500">
-                <span
-                  class="px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  :class="getStatusColor(event.status)"
-                >
-                  {{ getStatusLabel(event.status) }}
-                </span>
+              <div class="flex flex-wrap items-center gap-3 mt-4 text-sm text-neutral-500">
+                <StatusBadge :status="event.status" />
 
                 <div v-if="isEditing" class="flex items-center">
                   <Calendar class="w-4 h-4 mr-1.5" />
@@ -60,7 +53,7 @@
                   v-if="!isEditing && event.source_url"
                   :href="event.source_url"
                   target="_blank"
-                  class="flex items-center text-[#0D9488] hover:text-[#14B8A6] hover:underline transition-colors"
+                  class="flex items-center text-primary-600 hover:text-primary-500 hover:underline transition-colors"
                 >
                   <Link class="w-4 h-4 mr-1.5" />
                   来源链接
@@ -73,7 +66,7 @@
                 v-if="!isEditing"
                 @click="handleExport"
                 :disabled="exporting"
-                class="p-2 text-gray-400 hover:text-[#0D9488] bg-gray-50 hover:bg-[#F0FDFA] rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                class="p-2 text-neutral-400 hover:text-primary-600 bg-neutral-50 hover:bg-primary-50 rounded-md transition-colors cursor-pointer disabled:opacity-50"
                 title="导出为 Markdown"
               >
                 <Download v-if="!exporting" class="w-5 h-5" />
@@ -82,21 +75,21 @@
               <button
                 v-if="!isEditing"
                 @click="startEdit"
-                class="p-2 text-gray-400 hover:text-[#0D9488] bg-gray-50 hover:bg-[#F0FDFA] rounded-md transition-colors cursor-pointer"
+                class="p-2 text-neutral-400 hover:text-primary-600 bg-neutral-50 hover:bg-primary-50 rounded-md transition-colors cursor-pointer"
               >
                 <Edit2 class="w-5 h-5" />
               </button>
               <template v-else>
                 <button
                   @click="cancelEdit"
-                  class="px-3 py-1.5 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer"
+                  class="px-3 py-1.5 text-sm text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors cursor-pointer"
                 >
                   取消
                 </button>
                 <button
                   @click="handleSave"
                   :disabled="saving"
-                  class="px-4 py-1.5 text-sm text-white bg-[#F97316] hover:bg-[#FB923C] rounded-md font-medium transition-colors cursor-pointer flex items-center shadow-sm"
+                  class="px-4 py-1.5 text-sm text-white bg-cta-500 hover:bg-cta-400 rounded-md font-medium transition-colors cursor-pointer flex items-center shadow-sm"
                 >
                   <Loader2 v-if="saving" class="w-4 h-4 mr-1 animate-spin" />
                   <Save v-else class="w-4 h-4 mr-1" />
@@ -110,14 +103,14 @@
           <div v-if="isEditing" class="mb-6">
             <textarea
               v-model="editForm.summary"
-              class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#0D9488] transition-colors"
+              class="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-700 focus:outline-none focus:border-primary-600 transition-colors"
               placeholder="添加事件摘要..."
               rows="3"
             ></textarea>
           </div>
           <div
             v-else-if="event.summary"
-            class="mb-8 p-4 bg-gray-50 border-l-4 border-[#0D9488] rounded-r-lg text-gray-700 leading-relaxed text-sm md:text-base"
+            class="mb-8 p-4 bg-neutral-50 border-l-4 border-primary-600 rounded-r-lg text-neutral-700 leading-relaxed text-sm md:text-base"
           >
             {{ event.summary }}
           </div>
@@ -126,22 +119,24 @@
           <div v-if="isEditing" class="mt-6">
             <textarea
               v-model="editForm.content"
-              class="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg font-mono text-sm text-gray-800 focus:outline-none focus:border-[#0D9488] transition-colors resize-y min-h-[300px]"
+              class="w-full p-4 bg-neutral-50 border border-neutral-200 rounded-lg font-mono text-sm text-neutral-800 focus:outline-none focus:border-primary-600 transition-colors resize-y min-h-[300px]"
               placeholder="详细内容 (支持 Markdown)"
             ></textarea>
 
             <div class="mt-4">
               <input
                 v-model="editForm.source_url"
-                type="text"
-                class="w-full p-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#0D9488] transition-colors"
+                type="url"
+                inputmode="url"
+                enterkeyhint="go"
+                class="w-full p-2 bg-neutral-50 border border-neutral-200 rounded-md text-sm focus:outline-none focus:border-primary-600 transition-colors"
                 placeholder="来源链接 https://..."
               />
             </div>
           </div>
           <div
             v-else
-            class="prose prose-teal max-w-none text-gray-800 leading-loose prose-headings:text-[#134E4A] prose-a:text-[#0D9488] prose-a:no-underline hover:prose-a:underline"
+            class="prose prose-teal max-w-none text-neutral-800 leading-loose prose-headings:text-text-main prose-a:text-primary-600 prose-a:no-underline hover:prose-a:underline"
           >
             <div v-html="renderedContent"></div>
           </div>
@@ -151,12 +146,12 @@
       <!-- Sidebar (Right 30% on Desktop) -->
       <div class="lg:col-span-4 space-y-6">
         <!-- Actions & Tags -->
-        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+        <div class="bg-white rounded-2xl p-5 border border-neutral-100 shadow-sm">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider">操作与标签</h3>
+            <h3 class="text-sm font-bold text-neutral-400 uppercase tracking-wider">操作与标签</h3>
             <button
               @click="showStatusModal = true"
-              class="text-xs font-medium text-[#F97316] hover:text-[#FB923C] cursor-pointer"
+              class="text-xs font-medium text-cta-500 hover:text-cta-400 cursor-pointer"
             >
               修改状态
             </button>
@@ -166,30 +161,30 @@
             <span
               v-for="tag in tags"
               :key="tag.id"
-              class="px-2.5 py-1 bg-[#F0FDFA] text-[#0D9488] border border-[#CCFBF1] rounded-md text-xs font-medium flex items-center"
+              class="px-2.5 py-1 bg-primary-50 text-primary-600 border border-primary-100 rounded-md text-xs font-medium flex items-center"
             >
               <Hash class="w-3 h-3 mr-1 opacity-70" />
               {{ tag.name }}
             </span>
             <button
               @click="showTagModal = true"
-              class="px-2 py-1 bg-gray-50 text-gray-500 hover:text-[#0D9488] hover:bg-[#F0FDFA] border border-dashed border-gray-300 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center"
+              class="px-2 py-1 bg-neutral-50 text-neutral-500 hover:text-primary-600 hover:bg-primary-50 border border-dashed border-neutral-300 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center"
             >
               <Plus class="w-3 h-3 mr-0.5" />
               标签
             </button>
           </div>
 
-          <div class="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
+          <div class="grid grid-cols-2 gap-3 pt-4 border-t border-neutral-100">
             <button
               @click="handleBack"
-              class="flex items-center justify-center px-3 py-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+              class="flex items-center justify-center px-3 py-2 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 rounded-lg text-sm font-medium transition-colors cursor-pointer"
             >
               <ArrowLeft class="w-4 h-4 mr-1.5" /> 返回
             </button>
             <button
               @click="handleDelete"
-              class="flex items-center justify-center px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+              class="flex items-center justify-center px-3 py-2 bg-error-50 text-error-600 hover:bg-error-100 rounded-lg text-sm font-medium transition-colors cursor-pointer"
             >
               <Trash2 class="w-4 h-4 mr-1.5" /> 删除
             </button>
@@ -197,64 +192,66 @@
         </div>
 
         <!-- Timeline -->
-        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+        <div class="bg-white rounded-2xl p-5 border border-neutral-100 shadow-sm">
           <div class="flex items-center justify-between mb-5">
-            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center">
+            <h3
+              class="text-sm font-bold text-neutral-400 uppercase tracking-wider flex items-center"
+            >
               <GitCommit class="w-4 h-4 mr-1.5" />
               时间线
             </h3>
             <button
               @click="openAddTimeline"
-              class="p-1 text-gray-400 hover:text-[#0D9488] bg-gray-50 hover:bg-[#F0FDFA] rounded transition-colors cursor-pointer"
+              class="p-1 text-neutral-400 hover:text-primary-600 bg-neutral-50 hover:bg-primary-50 rounded transition-colors cursor-pointer"
             >
               <Plus class="w-4 h-4" />
             </button>
           </div>
 
-          <div v-if="timelineNodes.length === 0" class="text-center py-6 text-sm text-gray-400">
+          <div v-if="timelineNodes.length === 0" class="text-center py-6 text-sm text-neutral-400">
             暂无节点，点击右侧 + 号添加
           </div>
 
-          <div v-else class="relative border-l-2 border-gray-100 ml-2.5 space-y-6 pb-2">
+          <div v-else class="relative border-l-2 border-neutral-100 ml-2.5 space-y-6 pb-2">
             <div v-for="node in timelineNodes" :key="node.id" class="relative pl-6 group">
               <!-- Timeline Dot -->
               <div
-                class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-2 border-[#14B8A6] group-hover:border-[#F97316] transition-colors"
+                class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-2 border-primary-500 group-hover:border-cta-500 transition-colors"
               ></div>
 
               <!-- Timeline Content -->
               <div
-                class="bg-gray-50 group-hover:bg-[#F0FDFA] p-3 rounded-lg transition-colors border border-transparent group-hover:border-[#CCFBF1]"
+                class="bg-neutral-50 group-hover:bg-primary-50 p-3 rounded-lg transition-colors border border-transparent group-hover:border-primary-100"
               >
                 <div class="flex justify-between items-start mb-1">
-                  <h4 class="font-semibold text-sm text-[#134E4A]">{{ node.title }}</h4>
+                  <h4 class="font-semibold text-sm text-text-main">{{ node.title }}</h4>
                   <div
                     class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <button
                       @click="editTimelineNode(node)"
-                      class="p-1 text-gray-400 hover:text-[#0D9488] rounded cursor-pointer"
+                      class="p-1 text-neutral-400 hover:text-primary-600 rounded cursor-pointer"
                     >
                       <Edit2 class="w-3 h-3" />
                     </button>
                     <button
                       @click="deleteTimelineNodeItem(node)"
-                      class="p-1 text-gray-400 hover:text-red-500 rounded cursor-pointer"
+                      class="p-1 text-neutral-400 hover:text-error-500 rounded cursor-pointer"
                     >
                       <Trash2 class="w-3 h-3" />
                     </button>
                   </div>
                 </div>
-                <div class="text-xs text-gray-500 mb-2 font-medium">
+                <div class="text-xs text-neutral-500 mb-2 font-medium">
                   {{ formatDate(node.node_date, true) }}
                 </div>
-                <p v-if="node.description" class="text-xs text-gray-600 line-clamp-2">
+                <p v-if="node.description" class="text-xs text-neutral-600 line-clamp-2">
                   {{ node.description }}
                 </p>
                 <div class="mt-2 text-xs">
                   <button
                     @click="uploadMaterialToNode(node)"
-                    class="text-[#0D9488] hover:underline cursor-pointer flex items-center"
+                    class="text-primary-600 hover:underline cursor-pointer flex items-center"
                   >
                     <Paperclip class="w-3 h-3 mr-1" /> 添加材料
                   </button>
@@ -265,21 +262,23 @@
         </div>
 
         <!-- Materials -->
-        <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+        <div class="bg-white rounded-2xl p-5 border border-neutral-100 shadow-sm">
           <div class="flex items-center justify-between mb-5">
-            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center">
+            <h3
+              class="text-sm font-bold text-neutral-400 uppercase tracking-wider flex items-center"
+            >
               <Files class="w-4 h-4 mr-1.5" />
               参考材料
             </h3>
             <button
               @click="showUploadMaterial = true"
-              class="p-1 text-gray-400 hover:text-[#0D9488] bg-gray-50 hover:bg-[#F0FDFA] rounded transition-colors cursor-pointer"
+              class="p-1 text-neutral-400 hover:text-primary-600 bg-neutral-50 hover:bg-primary-50 rounded transition-colors cursor-pointer"
             >
               <Upload class="w-4 h-4" />
             </button>
           </div>
 
-          <div v-if="materials.length === 0" class="text-center py-6 text-sm text-gray-400">
+          <div v-if="materials.length === 0" class="text-center py-6 text-sm text-neutral-400">
             暂无附件材料
           </div>
 
@@ -287,11 +286,11 @@
             <div
               v-for="material in materials"
               :key="material.id"
-              class="relative group rounded-lg overflow-hidden border border-gray-200 bg-gray-50"
+              class="relative group rounded-lg overflow-hidden border border-neutral-200 bg-neutral-50"
             >
               <!-- Cover Preview -->
               <div
-                class="h-20 w-full bg-gray-100 flex items-center justify-center relative cursor-pointer"
+                class="h-20 w-full bg-neutral-100 flex items-center justify-center relative cursor-pointer"
                 @click="previewMaterial(material)"
               >
                 <img
@@ -299,9 +298,9 @@
                   :src="getMaterialPreviewUrl(material.id)"
                   class="w-full h-full object-cover"
                 />
-                <FileText v-else-if="material.type === 'pdf'" class="w-8 h-8 text-red-400" />
-                <Image v-else-if="material.type === 'snapshot'" class="w-8 h-8 text-[#0D9488]" />
-                <File class="w-8 h-8 text-gray-400" v-else />
+                <FileText v-else-if="material.type === 'pdf'" class="w-8 h-8 text-error-400" />
+                <Image v-else-if="material.type === 'snapshot'" class="w-8 h-8 text-primary-600" />
+                <File class="w-8 h-8 text-neutral-400" v-else />
 
                 <!-- Hover Overlay -->
                 <div
@@ -313,12 +312,12 @@
 
               <!-- Info -->
               <div class="p-2 bg-white flex items-center justify-between">
-                <span class="text-[10px] font-medium text-gray-600 truncate">{{
+                <span class="text-[10px] font-medium text-neutral-600 truncate">{{
                   material.title || material.type
                 }}</span>
                 <button
                   @click="deleteMaterialItem(material.id)"
-                  class="p-1 text-gray-400 hover:text-red-500 rounded cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                  class="p-1 text-neutral-400 hover:text-error-500 rounded cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X class="w-3 h-3" />
                 </button>
@@ -330,19 +329,20 @@
     </div>
 
     <!-- Edit Status Modal -->
-    <n-modal v-model:show="showStatusModal" preset="card" class="max-w-md" title="修改事件状态">
+    <n-modal
+      v-model:show="showStatusModal"
+      preset="card"
+      class="max-w-md"
+      :title="'修改事件状态'"
+      :fullscreen="isMobile"
+    >
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">当前状态</label>
-          <span
-            class="px-2.5 py-0.5 rounded-full text-xs font-medium"
-            :class="getStatusColor(event.status)"
-          >
-            {{ getStatusLabel(event.status) }}
-          </span>
+          <label class="block text-sm font-medium text-neutral-700 mb-1">当前状态</label>
+          <StatusBadge :status="event.status" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">新状态</label>
+          <label class="block text-sm font-medium text-neutral-700 mb-1">新状态</label>
           <n-select
             v-model:value="newStatus"
             :options="[
@@ -357,14 +357,14 @@
         <div class="flex justify-end space-x-3">
           <button
             @click="showStatusModal = false"
-            class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md"
+            class="px-4 py-2 text-neutral-600 bg-neutral-100 rounded-md"
           >
             取消
           </button>
           <button
             @click="handleSaveStatus"
             :disabled="savingStatus"
-            class="px-4 py-2 text-white bg-[#0D9488] rounded-md flex items-center"
+            class="px-4 py-2 text-white bg-primary-600 rounded-md flex items-center"
           >
             保存
           </button>
@@ -373,7 +373,13 @@
     </n-modal>
 
     <!-- Tag Select Modal -->
-    <n-modal v-model:show="showTagModal" preset="card" class="max-w-md" title="选择标签">
+    <n-modal
+      v-model:show="showTagModal"
+      preset="card"
+      class="max-w-md"
+      :title="isMobile ? undefined : '选择标签'"
+      :fullscreen="isMobile"
+    >
       <div class="max-h-60 overflow-y-auto">
         <n-checkbox-group v-model:value="selectedTagIds">
           <div class="grid grid-cols-2 gap-2">
@@ -381,7 +387,7 @@
               v-for="tag in allTags"
               :key="tag.id"
               :value="tag.id"
-              class="p-2 border border-gray-100 rounded hover:bg-gray-50"
+              class="p-2 border border-neutral-100 rounded hover:bg-neutral-50"
             >
               <span class="text-sm">{{ tag.name }}</span>
             </n-checkbox>
@@ -392,11 +398,11 @@
         <div class="flex justify-end space-x-3">
           <button
             @click="showTagModal = false"
-            class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md"
+            class="px-4 py-2 text-neutral-600 bg-neutral-100 rounded-md"
           >
             取消
           </button>
-          <button @click="handleSaveTags" class="px-4 py-2 text-white bg-[#0D9488] rounded-md">
+          <button @click="handleSaveTags" class="px-4 py-2 text-white bg-primary-600 rounded-md">
             保存
           </button>
         </div>
@@ -408,31 +414,32 @@
       v-model:show="showAddTimeline"
       preset="card"
       class="max-w-xl"
-      :title="editingTimelineNode ? '编辑节点' : '添加时间线节点'"
+      :title="isMobile ? undefined : editingTimelineNode ? '编辑节点' : '添加时间线节点'"
+      :fullscreen="isMobile"
     >
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">节点标题 *</label>
+          <label class="block text-sm font-medium text-neutral-700 mb-1">节点标题 *</label>
           <input
             v-model="timelineForm.title"
-            class="w-full p-2 border border-gray-200 rounded-md focus:border-[#0D9488] outline-none"
+            class="w-full p-2 border border-neutral-200 rounded-md focus:border-primary-600 outline-none"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">节点详情</label>
+          <label class="block text-sm font-medium text-neutral-700 mb-1">节点详情</label>
           <textarea
             v-model="timelineForm.description"
             rows="3"
-            class="w-full p-2 border border-gray-200 rounded-md focus:border-[#0D9488] outline-none"
+            class="w-full p-2 border border-neutral-200 rounded-md focus:border-primary-600 outline-none"
           ></textarea>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">日期</label>
+            <label class="block text-sm font-medium text-neutral-700 mb-1">日期</label>
             <n-date-picker v-model:value="timelineForm.node_date" type="datetime" class="w-full" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
+            <label class="block text-sm font-medium text-neutral-700 mb-1"
               >排序权重 (越小越靠前)</label
             >
             <n-input-number v-model:value="timelineForm.sort_order" :min="0" />
@@ -443,14 +450,14 @@
         <div class="flex justify-end space-x-3">
           <button
             @click="showAddTimeline = false"
-            class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md"
+            class="px-4 py-2 text-neutral-600 bg-neutral-100 rounded-md"
           >
             取消
           </button>
           <button
             @click="handleSaveTimeline"
             :disabled="savingTimeline"
-            class="px-4 py-2 text-white bg-[#0D9488] rounded-md"
+            class="px-4 py-2 text-white bg-primary-600 rounded-md"
           >
             保存
           </button>
@@ -459,17 +466,23 @@
     </n-modal>
 
     <!-- Upload Material Modal -->
-    <n-modal v-model:show="showUploadMaterial" preset="card" class="max-w-lg" title="上传参考材料">
+    <n-modal
+      v-model:show="showUploadMaterial"
+      preset="card"
+      class="max-w-lg"
+      :title="isMobile ? undefined : '上传参考材料'"
+      :fullscreen="isMobile"
+    >
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">材料标题</label>
+          <label class="block text-sm font-medium text-neutral-700 mb-1">材料标题</label>
           <input
             v-model="materialForm.title"
-            class="w-full p-2 border border-gray-200 rounded-md outline-none focus:border-[#0D9488]"
+            class="w-full p-2 border border-neutral-200 rounded-md outline-none focus:border-primary-600"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">材料类型</label>
+          <label class="block text-sm font-medium text-neutral-700 mb-1">材料类型</label>
           <n-select
             v-model:value="materialForm.type"
             :options="[
@@ -482,7 +495,7 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">关联节点 (可选)</label>
+          <label class="block text-sm font-medium text-neutral-700 mb-1">关联节点 (可选)</label>
           <n-select
             v-model:value="materialForm.timeline_node_id"
             :options="timelineNodeOptions"
@@ -490,7 +503,7 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">上传文件</label>
+          <label class="block text-sm font-medium text-neutral-700 mb-1">上传文件</label>
           <n-upload
             :default-upload="false"
             :file-list="materialForm.file ? [materialForm.file] : []"
@@ -498,10 +511,13 @@
           >
             <n-button>选择文件</n-button>
           </n-upload>
-          <p class="text-xs text-gray-400 mt-2">或提供来源链接：</p>
+          <p class="text-xs text-neutral-400 mt-2">或提供来源链接：</p>
           <input
             v-model="materialForm.source_url"
-            class="w-full p-2 mt-1 border border-gray-200 rounded-md outline-none focus:border-[#0D9488]"
+            type="url"
+            inputmode="url"
+            enterkeyhint="go"
+            class="w-full p-2 mt-1 border border-neutral-200 rounded-md outline-none focus:border-primary-600"
             placeholder="https://..."
           />
         </div>
@@ -510,14 +526,14 @@
         <div class="flex justify-end space-x-3">
           <button
             @click="showUploadMaterial = false"
-            class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md"
+            class="px-4 py-2 text-neutral-600 bg-neutral-100 rounded-md"
           >
             取消
           </button>
           <button
             @click="handleUploadMaterial"
             :disabled="uploadingMaterial"
-            class="px-4 py-2 text-white bg-[#0D9488] rounded-md"
+            class="px-4 py-2 text-white bg-primary-600 rounded-md"
           >
             上传
           </button>
@@ -555,6 +571,8 @@ import {
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import type { Event, Tag, TimelineNode, Material, EventStatus } from '@book-of-ages/shared';
+import { LoadingSkeleton, StatusBadge } from '../components/ui';
+import { useIsMobile } from '../composables/useMediaQuery';
 import {
   getEvent,
   updateEvent,
@@ -580,6 +598,7 @@ import {
 const message = useMessage();
 const route = useRoute();
 const router = useRouter();
+const isMobile = useIsMobile();
 
 const loading = ref(true);
 const event = ref<Event | null>(null);
@@ -630,7 +649,7 @@ const materialForm = ref({
 });
 
 const renderedContent = computed(() => {
-  if (!event.value?.content) return '<p class="text-gray-400 italic">暂无内容详情...</p>';
+  if (!event.value?.content) return '<p class="text-neutral-400 italic">暂无内容详情...</p>';
   const html = marked(event.value.content);
   return DOMPurify.sanitize(html);
 });
@@ -646,26 +665,6 @@ function formatDate(dateStr: string | null | undefined, short = false): string {
   if (short)
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   return date.toLocaleString();
-}
-
-function getStatusColor(status: string) {
-  const map: Record<string, string> = {
-    draft: 'bg-yellow-100 text-yellow-800',
-    confirmed: 'bg-teal-100 text-teal-800',
-    archived: 'bg-gray-100 text-gray-600',
-    deleted: 'bg-red-100 text-red-800',
-  };
-  return map[status] || 'bg-gray-100 text-gray-800';
-}
-
-function getStatusLabel(status: string) {
-  const map: Record<string, string> = {
-    draft: '待收录',
-    confirmed: '已收录',
-    archived: '已归档',
-    deleted: '已删除',
-  };
-  return map[status] || status;
 }
 
 function handleBack() {
@@ -942,12 +941,12 @@ onMounted(() => {
   @apply text-lg mt-4 mb-2;
 }
 .prose blockquote {
-  @apply border-l-4 border-[#14B8A6] pl-4 italic text-gray-600 bg-[#F0FDFA] py-2 rounded-r-lg my-4;
+  @apply border-l-4 border-primary-500 pl-4 italic text-neutral-600 bg-primary-50 py-2 rounded-r-lg my-4;
 }
 .prose pre {
-  @apply bg-gray-50 text-gray-800 border border-gray-200 rounded-lg p-4 overflow-x-auto my-4;
+  @apply bg-neutral-50 text-neutral-800 border border-neutral-200 rounded-lg p-4 overflow-x-auto my-4;
 }
 .prose code {
-  @apply text-[#0D9488] bg-[#F0FDFA] px-1.5 py-0.5 rounded text-sm;
+  @apply text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded text-sm;
 }
 </style>

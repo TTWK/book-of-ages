@@ -59,12 +59,21 @@
               {{ new Date(event.event_date).toLocaleDateString() }}
             </span>
           </div>
-          <button
-            @click.stop="openEditModal(event)"
-            class="p-1.5 text-neutral-400 hover:text-primary-600 hover:bg-primary-600/10 rounded transition-colors"
-          >
-            <Edit2 class="w-4 h-4" />
-          </button>
+          <div class="flex items-center space-x-1">
+            <button
+              @click.stop="openEditModal(event)"
+              class="p-1.5 text-neutral-400 hover:text-primary-600 hover:bg-primary-600/10 rounded transition-colors"
+            >
+              <Edit2 class="w-4 h-4" />
+            </button>
+            <button
+              @click.stop="handleDelete(event)"
+              class="p-1.5 text-neutral-400 hover:text-error-500 hover:bg-error-50 rounded transition-colors"
+              title="删除事件"
+            >
+              <Trash2 class="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -206,14 +215,18 @@ import {
   Inbox as InboxIcon,
   Download,
   Save,
+  Trash2,
 } from 'lucide-vue-next';
 import type { Event, EventStatus } from '@book-of-ages/shared';
 import { getEventList, createEvent, updateEvent } from '../api/eventApi';
 import { parseURL } from '../api/toolApi';
 import { EmptyState, LoadingSkeleton, StatusBadge } from '../components/ui';
+import { useCommonUndoActions } from '../composables/useUndo';
 
 const message = useMessage();
 const router = useRouter();
+
+const { deleteEvent: deleteEventWithUndo } = useCommonUndoActions(message);
 
 const events = ref<Event[]>([]);
 const loading = ref(false);
@@ -276,6 +289,30 @@ function openEditModal(event: Event) {
 const paginationState = {
   itemCount: 0,
 };
+
+async function handleDelete(event: Event) {
+  await deleteEventWithUndo(
+    event.id,
+    async () => {
+      const { deleteEvent } = await import('../api/eventApi');
+      await deleteEvent(event.id);
+      events.value = events.value.filter((e) => e.id !== event.id);
+    },
+    async () => {
+      const { createEvent } = await import('../api/eventApi');
+      await createEvent({
+        title: event.title,
+        summary: event.summary,
+        content: event.content,
+        status: event.status,
+        event_date: event.event_date,
+        source_url: event.source_url,
+      });
+      await loadEvents();
+    },
+    '事件'
+  );
+}
 
 async function loadEvents() {
   loading.value = true;

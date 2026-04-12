@@ -1,5 +1,12 @@
 <template>
   <div class="relative min-h-[calc(100vh-8rem)]">
+    <!-- Pull to Refresh Indicator -->
+    <PullToRefresh
+      :pull-distance="pullDistance"
+      :is-refreshing="isPullRefreshing"
+      :is-pulling="isPulling"
+    />
+
     <!-- Header Area -->
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -159,7 +166,6 @@
 import { ref, onMounted } from 'vue';
 import { useMessage } from 'naive-ui';
 import {
-  Loader2,
   RefreshCw,
   CheckCircle,
   Calendar,
@@ -172,6 +178,8 @@ import type { Event } from '@book-of-ages/shared';
 import { getEventList, updateEvent } from '../api/eventApi';
 import { EmptyState, LoadingSkeleton, StatusBadge } from '../components/ui';
 import { useCommonUndoActions } from '../composables/useUndo';
+import { usePullToRefresh } from '../composables/usePullToRefresh';
+import PullToRefresh from '../components/PullToRefresh.vue';
 
 const message = useMessage();
 
@@ -182,6 +190,15 @@ const events = ref<Event[]>([]);
 const loading = ref(false);
 const showPreview = ref(false);
 const selectedEvent = ref<Event | null>(null);
+
+// 下拉刷新
+const {
+  isRefreshing: isPullRefreshing,
+  pullDistance,
+  isPulling,
+} = usePullToRefresh(async () => {
+  await loadEvents();
+});
 
 async function loadEvents() {
   loading.value = true;

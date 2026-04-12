@@ -127,7 +127,7 @@ export async function deleteMaterial(id: string): Promise<boolean> {
   const now = new Date().toISOString();
   const result = await run(
     `
-    UPDATE materials SET deleted_at = ?, updated_at = ? WHERE id = ?
+    UPDATE materials SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL
   `,
     [now, now, id]
   );

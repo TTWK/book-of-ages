@@ -45,11 +45,7 @@
         暂无数据
       </div>
       <div v-else class="space-y-3">
-        <div
-          v-for="(item, index) in aggregatedData"
-          :key="item.period"
-          class="flex items-center gap-4"
-        >
+        <div v-for="item in aggregatedData" :key="item.period" class="flex items-center gap-4">
           <div class="w-24 text-sm text-gray-600 text-right flex-shrink-0">
             {{ formatPeriod(item.period) }}
           </div>
@@ -140,11 +136,11 @@ function getHeatmapColor(count: number): string {
 
 function formatPeriod(period: string): string {
   if (granularity.value === 'week') {
-    const [year, week] = period.split('-');
+    const [_year, week] = period.split('-');
     return `W${week}`;
   }
   if (granularity.value === 'month') {
-    const [year, month] = period.split('-');
+    const [_year, month] = period.split('-');
     return `${month}月`;
   }
   return period;

@@ -96,7 +96,13 @@
 
     <!-- Main Content Area -->
     <main class="flex-1 max-w-4xl w-full mx-auto p-4 md:py-8 pb-24 md:pb-8">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="fade-slide" mode="out-in">
+          <keep-alive :include="cachedViews">
+            <component :is="Component" :key="$route.path" />
+          </keep-alive>
+        </transition>
+      </router-view>
     </main>
 
     <!-- Mobile Bottom Tab Bar -->
@@ -143,6 +149,7 @@ import {
   TrendingUp,
 } from 'lucide-vue-next';
 import { useAppStore } from '../stores/app';
+import { useCommonShortcuts } from '../composables/useKeyboardShortcuts';
 
 const appStore = useAppStore();
 
@@ -151,6 +158,24 @@ const router = useRouter() || appRouter;
 const route = useRoute();
 
 const searchQuery = ref('');
+
+// 缓存的视图组件（keep-alive）
+const cachedViews = ['EventsView', 'InboxView', 'TimelineView', 'TagsView'];
+
+// 注册全局快捷键
+useCommonShortcuts({
+  onSearch: () => {
+    router.push({ name: 'search' });
+  },
+  onBack: () => {
+    if (route.name !== 'events') {
+      router.back();
+    }
+  },
+  onToggleTheme: () => {
+    appStore.isDark = !appStore.isDark;
+  },
+});
 
 const currentRoute = computed(() => {
   return (route?.name as string) || (appRouter?.currentRoute?.value?.name as string) || '';
@@ -189,6 +214,7 @@ function handleSearch() {
 </script>
 
 <style scoped>
+/* 淡入淡出动画（旧版，保留兼容） */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;
@@ -197,6 +223,25 @@ function handleSearch() {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* 淡入 + 滑动动画（新版） */
+.fade-slide-enter-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-slide-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 .pb-safe {

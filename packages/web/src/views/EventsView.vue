@@ -2,7 +2,7 @@
   <div class="relative min-h-[calc(100vh-8rem)]">
     <!-- Header Area -->
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-[#134E4A] tracking-tight">事件库</h1>
+      <h1 class="text-2xl font-bold text-text-main tracking-tight">事件库</h1>
 
       <div class="hidden md:flex items-center space-x-4">
         <n-select
@@ -13,7 +13,7 @@
         />
         <button
           @click="openCreateModal"
-          class="flex items-center px-4 py-2 bg-[#F97316] hover:bg-[#FB923C] text-white rounded-md font-medium transition-colors duration-200 cursor-pointer shadow-sm shadow-orange-500/20"
+          class="flex items-center px-4 py-2 bg-cta-500 hover:bg-cta-400 text-white rounded-md font-medium transition-colors duration-200 cursor-pointer shadow-sm shadow-cta-500/20"
         >
           <Plus class="w-5 h-5 mr-1" />
           新建事件
@@ -22,44 +22,37 @@
     </div>
 
     <!-- Events List -->
-    <div v-if="loading" class="flex justify-center items-center py-20">
-      <Loader2 class="w-8 h-8 animate-spin text-[#0D9488]" />
-    </div>
+    <LoadingSkeleton v-if="loading" type="cards" :count="3" />
 
-    <div
+    <EmptyState
       v-else-if="events.length === 0"
-      class="flex flex-col items-center justify-center py-20 text-gray-500"
-    >
-      <InboxIcon class="w-12 h-12 mb-4 text-gray-300" />
-      <p class="text-lg">暂无事件记录</p>
-    </div>
+      :icon="InboxIcon"
+      title="暂无事件记录"
+      icon-bg-class="bg-primary-100"
+      icon-color-class="text-primary-400"
+    />
 
     <div v-else class="space-y-4 pb-20">
       <div
         v-for="event in events"
         :key="event.id"
         @click="router.push(`/events/${event.id}`)"
-        class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#0D9488]/30 transition-all duration-200 cursor-pointer group"
+        class="bg-white p-5 rounded-xl border border-neutral-100 shadow-sm hover:shadow-md hover:border-primary-600/30 transition-all duration-200 cursor-pointer group"
       >
         <div class="flex justify-between items-start mb-2">
           <h2
-            class="text-lg font-semibold text-[#134E4A] group-hover:text-[#0D9488] transition-colors line-clamp-1"
+            class="text-lg font-semibold text-text-main group-hover:text-primary-600 transition-colors line-clamp-1"
           >
             {{ event.title }}
           </h2>
-          <span
-            class="px-2.5 py-0.5 text-xs font-medium rounded-full whitespace-nowrap"
-            :class="getStatusColor(event.status)"
-          >
-            {{ getStatusLabel(event.status) }}
-          </span>
+          <StatusBadge :status="event.status" />
         </div>
 
-        <p v-if="event.summary" class="text-sm text-gray-600 mb-3 line-clamp-2">
+        <p v-if="event.summary" class="text-sm text-neutral-600 mb-3 line-clamp-2">
           {{ event.summary }}
         </p>
 
-        <div class="flex items-center justify-between text-xs text-gray-400">
+        <div class="flex items-center justify-between text-xs text-neutral-400">
           <div class="flex items-center space-x-3">
             <span v-if="event.event_date" class="flex items-center">
               <Calendar class="w-3.5 h-3.5 mr-1" />
@@ -68,7 +61,7 @@
           </div>
           <button
             @click.stop="openEditModal(event)"
-            class="p-1.5 text-gray-400 hover:text-[#0D9488] hover:bg-[#0D9488]/10 rounded transition-colors"
+            class="p-1.5 text-neutral-400 hover:text-primary-600 hover:bg-primary-600/10 rounded transition-colors"
           >
             <Edit2 class="w-4 h-4" />
           </button>
@@ -89,7 +82,7 @@
     <!-- Mobile FAB -->
     <button
       @click="openCreateModal"
-      class="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-[#F97316] text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 hover:bg-[#FB923C] active:scale-95 transition-all z-40 cursor-pointer"
+      class="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-cta-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-cta-500/30 hover:bg-cta-400 active:scale-95 transition-all z-40 cursor-pointer"
     >
       <Plus class="w-6 h-6" />
     </button>
@@ -217,6 +210,7 @@ import {
 import type { Event, EventStatus } from '@book-of-ages/shared';
 import { getEventList, createEvent, updateEvent } from '../api/eventApi';
 import { parseURL } from '../api/toolApi';
+import { EmptyState, LoadingSkeleton, StatusBadge } from '../components/ui';
 
 const message = useMessage();
 const router = useRouter();
@@ -250,26 +244,6 @@ const eventForm = ref({
 const formRules: FormRules = {
   title: { required: true, message: '请输入标题', trigger: 'blur' },
 };
-
-function getStatusColor(status: string) {
-  const map: Record<string, string> = {
-    draft: 'bg-yellow-100 text-yellow-800',
-    confirmed: 'bg-teal-100 text-teal-800',
-    archived: 'bg-gray-100 text-gray-600',
-    deleted: 'bg-red-100 text-red-800',
-  };
-  return map[status] || 'bg-gray-100 text-gray-800';
-}
-
-function getStatusLabel(status: string) {
-  const map: Record<string, string> = {
-    draft: '待收录',
-    confirmed: '已收录',
-    archived: '已归档',
-    deleted: '已删除',
-  };
-  return map[status] || status;
-}
 
 function openCreateModal() {
   editingEventId.value = null;

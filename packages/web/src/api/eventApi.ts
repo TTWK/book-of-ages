@@ -94,3 +94,16 @@ export async function getEventTags(id: string): Promise<Tag[]> {
 export async function updateEventTags(id: string, tagIds: string[]): Promise<void> {
   return apiClient.put<void>(`/api/events/${id}/tags`, { tagIds });
 }
+
+/**
+ * 导出事件为 Markdown
+ */
+export async function exportEvent(id: string): Promise<string> {
+  const axios = (await import('axios')).default;
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+
+  const response = await axios.get<string>(`${API_BASE_URL}/api/events/${id}/export`, {
+    responseType: 'text',
+  });
+  return response.data;
+}

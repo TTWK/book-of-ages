@@ -31,6 +31,8 @@ import {
   deleteMaterial,
 } from '../services/materialService';
 import { getTimelineNodeById as checkTimelineNode } from '../services/timelineService';
+import { exportEventToMarkdown } from '../services/exportService';
+import { getTimeAggregation } from '../services/analyticsService';
 import { saveUploadedFile, getFilePath, getMimeType, deleteFile } from '../services/fileService';
 import type { CreateEventInput, UpdateEventInput, EventStatus } from '@book-of-ages/shared';
 import type { CreateTimelineNodeInput, UpdateTimelineNodeInput } from '@book-of-ages/shared';
@@ -444,6 +446,28 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
+  // 获取时间聚合数据
+  fastify.get(
+    '/api/analytics/time-aggregation',
+    async (
+      request: FastifyRequest<{
+        Querystring: { granularity?: 'week' | 'month' | 'year' };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const { granularity = 'month' } = request.query;
+      try {
+        const data = await getTimeAggregation(granularity);
+        reply.send({ success: true, data });
+      } catch (error) {
+        reply.code(500).send({
+          success: false,
+          error: { code: 'ANALYTICS_FAILED', message: '获取聚合数据失败' },
+        });
+      }
+    }
+  );
+
   // 创建事件
   fastify.post(
     '/api/events',
@@ -515,6 +539,40 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         return;
       }
       reply.send({ success: true, data: event });
+    }
+  );
+
+  // 导出事件为 Markdown
+  fastify.get(
+    '/api/events/:id/export',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const id = request.params.id;
+      // 验证 UUID 格式
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        reply.code(404).send({
+          success: false,
+          error: { code: 'NOT_FOUND', message: '路由不存在' },
+        });
+        return;
+      }
+
+      try {
+        const markdown = await exportEventToMarkdown(id);
+        reply.type('text/markdown').send(markdown);
+      } catch (error) {
+        if (error instanceof Error && error.message === '事件不存在') {
+          reply.code(404).send({
+            success: false,
+            error: { code: 'NOT_FOUND', message: '事件不存在' },
+          });
+        } else {
+          reply.code(500).send({
+            success: false,
+            error: { code: 'EXPORT_FAILED', message: '导出失败' },
+          });
+        }
+      }
     }
   );
 

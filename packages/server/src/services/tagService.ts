@@ -157,3 +157,46 @@ export async function updateEventTags(eventId: string, tagIds: string[]): Promis
 
   await import('../db').then((db) => db.transaction(queries));
 }
+
+/**
+ * 获取标签下的所有事件详情
+ */
+export async function getTagEventDetails(tagId: string): Promise<{
+  tag: Tag;
+  events: Array<{
+    id: string;
+    title: string;
+    summary?: string;
+    event_date?: string;
+    created_at: string;
+  }>;
+}> {
+  const tag = await getTagById(tagId);
+  if (!tag) {
+    throw new Error('标签不存在');
+  }
+
+  const events = await import('../db').then(({ all }) =>
+    all<{
+      id: string;
+      title: string;
+      summary?: string;
+      event_date?: string;
+      created_at: string;
+    }>(
+      `
+      SELECT e.id, e.title, e.summary, e.event_date, e.created_at
+      FROM events e
+      INNER JOIN event_tags et ON e.id = et.event_id
+      WHERE et.tag_id = ? AND e.deleted_at IS NULL AND e.status != 'deleted'
+      ORDER BY COALESCE(e.event_date, e.created_at) ASC
+    `,
+      [tagId]
+    )
+  );
+
+  return {
+    tag,
+    events,
+  };
+}

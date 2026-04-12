@@ -140,6 +140,7 @@ import {
   Moon,
   CalendarDays,
   ScrollText,
+  TrendingUp,
 } from 'lucide-vue-next';
 import { useAppStore } from '../stores/app';
 
@@ -166,6 +167,7 @@ const navItems = [
   { label: '事件库', key: 'events', icon: FileText },
   { label: '收件箱', key: 'inbox', icon: Inbox },
   { label: '时间线', key: 'timeline', icon: CalendarDays },
+  { label: '时间分析', key: 'analytics', icon: TrendingUp },
   { label: '标签', key: 'tags', icon: Tags },
   { label: '搜索', key: 'search', icon: Search },
 ];

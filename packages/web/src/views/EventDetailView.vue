@@ -71,6 +71,16 @@
             <div class="ml-4 flex-shrink-0 flex space-x-2">
               <button
                 v-if="!isEditing"
+                @click="handleExport"
+                :disabled="exporting"
+                class="p-2 text-gray-400 hover:text-[#0D9488] bg-gray-50 hover:bg-[#F0FDFA] rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                title="导出为 Markdown"
+              >
+                <Download v-if="!exporting" class="w-5 h-5" />
+                <Loader2 v-else class="w-5 h-5 animate-spin" />
+              </button>
+              <button
+                v-if="!isEditing"
                 @click="startEdit"
                 class="p-2 text-gray-400 hover:text-[#0D9488] bg-gray-50 hover:bg-[#F0FDFA] rounded-md transition-colors cursor-pointer"
               >
@@ -540,11 +550,19 @@ import {
   File,
   ExternalLink,
   X,
+  Download,
 } from 'lucide-vue-next';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import type { Event, Tag, TimelineNode, Material, EventStatus } from '@book-of-ages/shared';
-import { getEvent, updateEvent, deleteEvent, getEventTags, updateEventTags } from '../api/eventApi';
+import {
+  getEvent,
+  updateEvent,
+  deleteEvent,
+  getEventTags,
+  updateEventTags,
+  exportEvent,
+} from '../api/eventApi';
 import { getTagList } from '../api/tagApi';
 import {
   getTimelineNodes,
@@ -572,6 +590,7 @@ const materials = ref<Material[]>([]);
 
 const isEditing = ref(false);
 const saving = ref(false);
+const exporting = ref(false);
 
 const showStatusModal = ref(false);
 const savingStatus = ref(false);
@@ -651,6 +670,29 @@ function getStatusLabel(status: string) {
 
 function handleBack() {
   router.back();
+}
+
+async function handleExport() {
+  if (!event.value) return;
+  exporting.value = true;
+  try {
+    const markdown = await exportEvent(event.value.id);
+    // 创建下载链接
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${event.value.title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    message.success('导出成功');
+  } catch (_error) {
+    message.error('导出失败');
+  } finally {
+    exporting.value = false;
+  }
 }
 
 async function loadEvent() {

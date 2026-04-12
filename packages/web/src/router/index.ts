@@ -30,6 +30,12 @@ const routes = [
     meta: { title: '时间线' },
   },
   {
+    path: '/analytics',
+    name: 'analytics',
+    component: () => import('../views/AnalyticsView.vue'),
+    meta: { title: '时间分析' },
+  },
+  {
     path: '/tags',
     name: 'tags',
     component: () => import('../views/TagsView.vue'),

@@ -173,9 +173,9 @@ class ApiClient {
   /**
    * GET 请求（返回完整响应）
    */
-  async getFullResponse<T>(url: string, params?: any): Promise<ApiResponse<T>> {
+  async getFullResponse<T>(url: string, params?: any, config?: any): Promise<ApiResponse<T>> {
     try {
-      const response = await this.client.get<ApiResponse<T>>(url, { params });
+      const response = await this.client.get<ApiResponse<T>>(url, { params, ...config });
       return response.data;
     } catch (error) {
       if (error instanceof ApiError) throw error;

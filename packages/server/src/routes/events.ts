@@ -459,7 +459,7 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
       try {
         const data = await getTimeAggregation(granularity);
         reply.send({ success: true, data });
-      } catch (error) {
+      } catch (_error) {
         reply.code(500).send({
           success: false,
           error: { code: 'ANALYTICS_FAILED', message: '获取聚合数据失败' },

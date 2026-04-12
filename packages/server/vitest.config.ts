@@ -12,5 +12,13 @@ export default defineConfig({
         singleFork: false,
       },
     },
+    // 设置测试环境变量
+    env: {
+      NODE_ENV: 'test',
+    },
+    // 测试之间完全隔离，顺序执行
+    sequence: {
+      concurrent: false,
+    },
   },
 });

@@ -9,7 +9,11 @@ import fs from 'fs';
 import { schema } from './schema';
 
 let db: Database | null = null;
-const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'book-of-ages.db');
+const DB_PATH =
+  process.env.DATABASE_PATH ||
+  (process.env.NODE_ENV === 'test'
+    ? path.join(process.cwd(), 'data', `test-${process.pid}-${Date.now()}.db`)
+    : path.join(process.cwd(), 'data', 'book-of-ages.db'));
 
 /**
  * 获取数据库实例（单例模式）
@@ -26,10 +30,27 @@ export function getDatabase(): Database {
  */
 export function initDatabase(): Promise<Database> {
   return new Promise((resolve, reject) => {
+    // 如果已有连接，先关闭
+    if (db) {
+      db.close();
+      db = null;
+    }
+
     // 确保数据目录存在
     const dataDir = path.dirname(DB_PATH);
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
+    }
+
+    // 删除旧的测试数据库文件（如果存在）
+    if (process.env.NODE_ENV === 'test' && fs.existsSync(DB_PATH)) {
+      try {
+        fs.unlinkSync(DB_PATH);
+        if (fs.existsSync(DB_PATH + '-wal')) fs.unlinkSync(DB_PATH + '-wal');
+        if (fs.existsSync(DB_PATH + '-shm')) fs.unlinkSync(DB_PATH + '-shm');
+      } catch (unlinkErr) {
+        console.warn('Failed to delete old test database:', unlinkErr);
+      }
     }
 
     // 打开数据库连接
@@ -42,8 +63,9 @@ export function initDatabase(): Promise<Database> {
 
       console.log(`Database initialized at: ${DB_PATH}`);
 
-      // 启用外键约束（sqlite3 不支持回调）
+      // 启用外键约束和 WAL 模式（提高并发性能）
       db!.run('PRAGMA foreign_keys = ON');
+      db!.run('PRAGMA journal_mode = WAL');
 
       // 执行 Schema 创建表
       db!.exec(schema, (err) => {
@@ -65,6 +87,7 @@ export function initDatabase(): Promise<Database> {
 export function closeDatabase(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (db) {
+      const dbPath = DB_PATH;
       db.close((err) => {
         if (err) {
           reject(err);
@@ -72,6 +95,19 @@ export function closeDatabase(): Promise<void> {
         }
         db = null;
         console.log('Database connection closed');
+
+        // 在测试环境中删除临时数据库文件
+        if (process.env.NODE_ENV === 'test' && fs.existsSync(dbPath)) {
+          try {
+            fs.unlinkSync(dbPath);
+            // 同时删除可能存在的 -wal 和 -shm 文件
+            if (fs.existsSync(dbPath + '-wal')) fs.unlinkSync(dbPath + '-wal');
+            if (fs.existsSync(dbPath + '-shm')) fs.unlinkSync(dbPath + '-shm');
+          } catch (unlinkErr) {
+            console.warn('Failed to delete test database file:', unlinkErr);
+          }
+        }
+
         resolve();
       });
     } else {

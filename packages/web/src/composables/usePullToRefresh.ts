@@ -3,7 +3,7 @@
  * 实现移动端下拉刷新功能
  */
 
-import { ref, onMounted, onUnmounted, type Ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 export interface UsePullToRefreshOptions {
   /** 触发刷新的下拉距离（像素） */
@@ -33,7 +33,6 @@ export function usePullToRefresh(
 
   function handleTouchStart(event: TouchEvent) {
     // 只有在顶部时才启用
-    const el = container.value || window.document.documentElement;
     const scrollTop = container.value ? container.value.scrollTop : window.scrollY;
 
     if (scrollTop > 0) return;

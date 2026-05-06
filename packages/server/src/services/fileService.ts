@@ -7,7 +7,8 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import type { MaterialType } from '@book-of-ages/shared';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'data', 'uploads');
+const DATA_DIR = path.join(process.cwd(), 'data');
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 
 /**
  * 确保上传目录存在
@@ -49,7 +50,7 @@ export async function saveUploadedFile(
   fs.writeFileSync(filePath, buffer);
 
   // 返回相对路径（用于数据库存储）
-  return path.join('uploads', type, filename);
+  return `uploads/${type}/${filename}`;
 }
 
 /**
@@ -58,8 +59,9 @@ export async function saveUploadedFile(
  * @returns 完整文件路径
  */
 export function getFilePath(filePath: string): string {
-  return path.join(UPLOAD_DIR, filePath);
+  return path.join(DATA_DIR, filePath);
 }
+
 
 /**
  * 删除文件

@@ -8,9 +8,9 @@
       </div>
       <button
         @click="handleCreate()"
-        class="flex items-center px-4 py-2 bg-cta-500 hover:bg-cta-400 text-white rounded-md font-medium transition-colors duration-200 cursor-pointer shadow-sm shadow-cta-500/20"
+        class="flex items-center px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-sm font-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
       >
-        <Plus class="w-5 h-5 mr-1" />
+        <Plus class="w-5 h-5 mr-2" />
         新建标签
       </button>
     </div>

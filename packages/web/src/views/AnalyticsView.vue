@@ -1,18 +1,21 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-[#134E4A]">时间分析</h1>
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+      <div>
+        <h1 class="text-4xl font-serif font-bold text-stone-900 mb-2">时间分析</h1>
+        <p class="text-stone-500 font-medium">洞察历史规律，量化时光沉淀</p>
+      </div>
       <div class="flex space-x-2">
         <button
           v-for="g in granularities"
           :key="g.value"
           @click="granularity = g.value"
-          :class="[
-            'px-3 py-1.5 text-sm rounded-md font-medium transition-colors',
+          class="px-4 py-2 text-sm rounded-sm font-bold transition-all whitespace-nowrap"
+          :class="
             granularity === g.value
-              ? 'bg-[#0D9488] text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-          ]"
+              ? 'bg-stone-900 text-white shadow-sm'
+              : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+          "
         >
           {{ g.label }}
         </button>

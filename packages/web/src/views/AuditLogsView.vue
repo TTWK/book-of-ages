@@ -10,10 +10,10 @@
       <button
         @click="loadLogs"
         :disabled="loading"
-        class="flex items-center px-3 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-md font-medium transition-colors duration-200 cursor-pointer disabled:opacity-50 shadow-sm"
+        class="flex items-center px-4 py-2 bg-white border border-stone-200 hover:border-stone-900 text-stone-900 rounded-sm font-semibold transition-all duration-200 cursor-pointer disabled:opacity-50 whitespace-nowrap flex-shrink-0"
       >
-        <RefreshCw class="w-4 h-4 mr-1" :class="{ 'animate-spin': loading }" />
-        刷新
+        <RefreshCw class="w-4 h-4 mr-2" :class="{ 'animate-spin': loading }" />
+        刷新日志
       </button>
     </div>
 

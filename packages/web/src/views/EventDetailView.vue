@@ -66,7 +66,7 @@
                 v-if="!isEditing"
                 @click="handleExport"
                 :disabled="exporting"
-                class="p-2 text-neutral-400 hover:text-primary-600 bg-neutral-50 hover:bg-primary-50 rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                class="p-2 text-stone-400 hover:text-stone-900 bg-stone-50 hover:bg-stone-100 rounded-sm transition-colors cursor-pointer disabled:opacity-50"
                 title="导出为 Markdown"
               >
                 <Download v-if="!exporting" class="w-5 h-5" />
@@ -75,24 +75,24 @@
               <button
                 v-if="!isEditing"
                 @click="startEdit"
-                class="p-2 text-neutral-400 hover:text-primary-600 bg-neutral-50 hover:bg-primary-50 rounded-md transition-colors cursor-pointer"
+                class="p-2 text-stone-400 hover:text-stone-900 bg-stone-50 hover:bg-stone-100 rounded-sm transition-colors cursor-pointer"
               >
                 <Edit2 class="w-5 h-5" />
               </button>
               <template v-else>
                 <button
                   @click="cancelEdit"
-                  class="px-3 py-1.5 text-sm text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors cursor-pointer"
+                  class="px-4 py-2 text-sm text-stone-500 bg-stone-100 hover:bg-stone-200 rounded-sm font-semibold transition-colors cursor-pointer whitespace-nowrap"
                 >
                   取消
                 </button>
                 <button
                   @click="handleSave"
                   :disabled="saving"
-                  class="px-4 py-1.5 text-sm text-white bg-cta-500 hover:bg-cta-400 rounded-md font-medium transition-colors cursor-pointer flex items-center shadow-sm"
+                  class="px-6 py-2 text-sm text-white bg-stone-900 hover:bg-stone-800 rounded-sm font-bold transition-all cursor-pointer flex items-center shadow-sm whitespace-nowrap"
                 >
-                  <Loader2 v-if="saving" class="w-4 h-4 mr-1 animate-spin" />
-                  <Save v-else class="w-4 h-4 mr-1" />
+                  <Loader2 v-if="saving" class="w-4 h-4 mr-2 animate-spin" />
+                  <Save v-else class="w-4 h-4 mr-2" />
                   保存
                 </button>
               </template>
@@ -650,7 +650,7 @@ const materialForm = ref({
 
 const renderedContent = computed(() => {
   if (!event.value?.content) return '<p class="text-neutral-400 italic">暂无内容详情...</p>';
-  const html = marked(event.value.content);
+  const html = marked.parse(event.value.content) as string;
   return DOMPurify.sanitize(html);
 });
 

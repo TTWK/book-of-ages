@@ -49,158 +49,73 @@ const currentTheme = computed(() => (appStore.isDark ? darkTheme : null));
 
 const themeOverrides: GlobalThemeOverrides = {
   common: {
-    // Primary Colors (Teal)
-    primaryColor: '#0D9488',
-    primaryColorHover: '#14B8A6',
-    primaryColorPressed: '#0F766E',
-    primaryColorSuppl: 'rgba(13, 148, 136, 0.15)',
+    // Primary Colors (Zinc/Stone)
+    primaryColor: '#18181B',
+    primaryColorHover: '#3F3F46',
+    primaryColorPressed: '#09090B',
+    primaryColorSuppl: 'rgba(24, 24, 27, 0.1)',
 
-    // Info Colors (Blue)
-    infoColor: '#3B82F6',
-    infoColorHover: '#60A5FA',
-    infoColorPressed: '#2563EB',
-    infoColorSuppl: 'rgba(59, 130, 246, 0.15)',
+    // Info Colors (Stone/Blue)
+    infoColor: '#44403C',
+    infoColorHover: '#57534E',
+    infoColorPressed: '#292524',
+    infoColorSuppl: 'rgba(68, 64, 60, 0.1)',
 
-    // Success Colors (Green)
-    successColor: '#22C55E',
-    successColorHover: '#4ADE80',
-    successColorPressed: '#16A34A',
-    successColorSuppl: 'rgba(34, 197, 94, 0.15)',
+    // Success Colors (Sage)
+    successColor: '#15803D',
+    successColorHover: '#16A34A',
+    successColorPressed: '#14532D',
 
-    // Warning Colors (Amber)
-    warningColor: '#F59E0B',
-    warningColorHover: '#FBBF24',
-    warningColorPressed: '#D97706',
-    warningColorSuppl: 'rgba(245, 158, 11, 0.15)',
-
-    // Error Colors (Red)
-    errorColor: '#EF4444',
-    errorColorHover: '#F87171',
-    errorColorPressed: '#DC2626',
-    errorColorSuppl: 'rgba(239, 68, 68, 0.15)',
+    // Error Colors (Rose)
+    errorColor: '#BE123C',
+    errorColorHover: '#E11D48',
+    errorColorPressed: '#881337',
 
     // Neutral Colors
-    textColorBase: '#0F172A',
-    textColor1: '#0F172A',
-    textColor2: '#334155',
-    textColor3: '#475569',
-    textColorDisabled: 'rgba(100, 116, 139, 0.5)',
-    placeholderColor: '#94A3B8',
-    placeholderColorDisabled: 'rgba(100, 116, 139, 0.3)',
-    iconColor: '#475569',
-    iconColorHover: '#334155',
-    closeIconColor: '#64748B',
-
-    // Border Colors
-    borderColor: '#E2E8F0',
-    borderColorHover: '#CBD5E1',
-    borderColorPressed: '#94A3B8',
-    borderColorDisabled: '#F1F5F9',
+    textColorBase: '#1C1917',
+    textColor1: '#1C1917',
+    textColor2: '#44403C',
+    textColor3: '#78716C',
+    textColorDisabled: 'rgba(120, 113, 108, 0.5)',
+    placeholderColor: '#A8A29E',
+    borderColor: '#E7E5E4',
 
     // Background Colors
-    bodyColor: '#FFFFFF',
+    bodyColor: '#FDFCFB',
     cardColor: '#FFFFFF',
     modalColor: '#FFFFFF',
     popoverColor: '#FFFFFF',
-    drawerColor: '#FFFFFF',
 
-    // CTA/Action Colors (Orange)
-    actionColor: '#F97316',
-    actionColorHover: '#FB923C',
-    actionColorPressed: '#EA580C',
-    actionColorSuppl: 'rgba(249, 115, 22, 0.15)',
+    // CTA/Action Colors (Gold/Bronze)
+    actionColor: '#CA8A04',
 
     // Font
     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
-    fontFamilyMono:
-      'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
-
-    // Border Radius
-    borderRadius: '6px',
-    borderRadiusSmall: '4px',
-
-    // Shadows
-    boxShadow1: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-    boxShadow2: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-    boxShadow3: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-    boxShadowModal: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+    borderRadius: '4px',
   },
 
-  // Button Component
   Button: {
-    // Primary Button
-    colorPrimary: '#0D9488',
-    colorHoverPrimary: '#14B8A6',
-    colorPressedPrimary: '#0F766E',
-    colorFocusPrimary: '#0D9488',
-    textColorPrimary: '#FFFFFF',
-    textColorHoverPrimary: '#FFFFFF',
-    textColorPressedPrimary: '#FFFFFF',
-    textColorFocusPrimary: '#FFFFFF',
-
-    // Info Button
-    colorInfo: '#3B82F6',
-    colorHoverInfo: '#60A5FA',
-    colorPressedInfo: '#2563EB',
-    textColorInfo: '#FFFFFF',
-    textColorHoverInfo: '#FFFFFF',
-    textColorPressedInfo: '#FFFFFF',
-
-    // Success Button
-    colorSuccess: '#22C55E',
-    colorHoverSuccess: '#4ADE80',
-    colorPressedSuccess: '#16A34A',
-    textColorSuccess: '#FFFFFF',
-
-    // Warning Button
-    colorWarning: '#F59E0B',
-    colorHoverWarning: '#FBBF24',
-    colorPressedWarning: '#D97706',
-    textColorWarning: '#FFFFFF',
-
-    // Error Button
-    colorError: '#EF4444',
-    colorHoverError: '#F87171',
-    colorPressedError: '#DC2626',
-    textColorError: '#FFFFFF',
+    borderRadius: '2px',
+    fontWeight: '500',
+    heightLarge: '48px',
   },
 
-  // Card Component
   Card: {
-    borderColor: '#E2E8F0',
-    borderRadius: '12px',
-    color: '#FFFFFF',
-    colorModal: '#FFFFFF',
+    borderRadius: '4px',
+    borderColor: '#E7E5E4',
+    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
   },
 
-  // Modal Component
-  Modal: {
-    color: '#FFFFFF',
-    borderRadius: '12px',
-    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-  },
-
-  // Input Component
   Input: {
-    color: '#FFFFFF',
-    colorFocus: '#FFFFFF',
-    borderColor: '#E2E8F0',
-    borderColorHover: '#CBD5E1',
-    borderColorFocus: '#0D9488',
-    borderRadius: '6px',
+    borderRadius: '2px',
+    borderColor: '#E7E5E4',
+    borderColorHover: '#D6D3D1',
+    borderColorFocus: '#18181B',
   },
 
-  // Tag Component
-  Tag: {
-    borderRadius: '6px',
-  },
-
-  // Badge Component
-  Badge: {
-    colorProcessing: '#3B82F6',
-    colorSuccess: '#22C55E',
-    colorWarning: '#F59E0B',
-    colorError: '#EF4444',
+  Modal: {
+    borderRadius: '4px',
   },
 };
+
 </script>

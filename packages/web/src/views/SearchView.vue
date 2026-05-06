@@ -19,7 +19,7 @@
         <button
           @click="handleSearch"
           :disabled="loading"
-          class="absolute right-2 top-2 bottom-2 px-4 bg-primary-600 hover:bg-primary-500 text-white rounded-lg font-medium transition-colors flex items-center cursor-pointer disabled:opacity-70"
+          class="absolute right-2 top-2 bottom-2 px-4 bg-stone-900 hover:bg-stone-800 text-white rounded-sm font-medium transition-colors flex items-center cursor-pointer disabled:opacity-70 whitespace-nowrap"
         >
           <Loader2 v-if="loading" class="w-4 h-4 animate-spin" />
           <span v-else>搜索</span>

@@ -3,7 +3,7 @@
  * 实现滚动到底部自动加载更多的功能
  */
 
-import { ref, onMounted, onUnmounted, type Ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 export interface UseInfiniteScrollOptions {
   /** 距离底部多少像素时触发加载 */

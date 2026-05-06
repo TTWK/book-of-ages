@@ -10,7 +10,8 @@ import fs from 'fs';
 import path from 'path';
 
 describe('fileService', () => {
-  const testUploadDir = path.join(process.cwd(), 'data', 'uploads');
+  const testDataDir = path.join(process.cwd(), 'data');
+  const testUploadDir = path.join(testDataDir, 'uploads');
 
   afterAll(() => {
     // 清理测试文件
@@ -87,10 +88,7 @@ describe('fileService', () => {
       };
 
       const result = await saveUploadedFile(mockFile, 'other');
-      // saveUploadedFile 返回的是 uploads/other/filename
-      // 但实际文件保存在 UPLOAD_DIR/other/filename
-      const filename = result.replace('uploads/', '');
-      const fullPath = path.join(testUploadDir, filename);
+      const fullPath = getFilePath(result);
 
       expect(fs.existsSync(fullPath)).toBe(true);
     });
@@ -101,14 +99,14 @@ describe('fileService', () => {
       const relativePath = 'uploads/image/test.jpg';
       const fullPath = getFilePath(relativePath);
 
-      expect(fullPath).toBe(path.join(testUploadDir, relativePath));
+      expect(fullPath).toBe(path.join(testDataDir, relativePath));
     });
 
     it('should handle nested paths', () => {
       const relativePath = 'uploads/snapshot/test.html';
       const fullPath = getFilePath(relativePath);
 
-      expect(fullPath).toContain(testUploadDir);
+      expect(fullPath).toContain(testDataDir);
       expect(fullPath).toContain('test.html');
     });
   });
@@ -122,16 +120,13 @@ describe('fileService', () => {
       };
 
       const relativePath = await saveUploadedFile(mockFile, 'other');
-      // deleteFile 期望的路径是 uploads/other/filename，但 getFilePath 会加入 UPLOAD_DIR
-      // 实际需要传入的是相对于 UPLOAD_DIR 的路径
-      const filename = relativePath.replace('uploads/', '');
-      const deleted = deleteFile(filename);
+      const deleted = deleteFile(relativePath);
 
       expect(deleted).toBe(true);
     });
 
     it('should return false for non-existent file', () => {
-      const deleted = deleteFile('other/non-existent.txt');
+      const deleted = deleteFile('uploads/other/non-existent.txt');
 
       expect(deleted).toBe(false);
     });
@@ -144,12 +139,11 @@ describe('fileService', () => {
       };
 
       const relativePath = await saveUploadedFile(mockFile, 'other');
-      const filename = relativePath.replace('uploads/', '');
-      const fullPath = path.join(testUploadDir, filename);
+      const fullPath = getFilePath(relativePath);
 
       expect(fs.existsSync(fullPath)).toBe(true);
 
-      deleteFile(filename);
+      deleteFile(relativePath);
 
       expect(fs.existsSync(fullPath)).toBe(false);
     });
@@ -164,13 +158,12 @@ describe('fileService', () => {
       };
 
       const relativePath = await saveUploadedFile(mockFile, 'other');
-      const filename = relativePath.replace('uploads/', '');
 
-      expect(fileExists(filename)).toBe(true);
+      expect(fileExists(relativePath)).toBe(true);
     });
 
     it('should return false for non-existent file', () => {
-      expect(fileExists('other/ghost.txt')).toBe(false);
+      expect(fileExists('uploads/other/ghost.txt')).toBe(false);
     });
   });
 

@@ -15,9 +15,9 @@
           </h2>
           <button
             @click="showCreateKeyModal = true"
-            class="px-3 py-1.5 bg-[#0D9488] hover:bg-[#14B8A6] text-white rounded-md text-sm font-medium transition-colors cursor-pointer flex items-center"
+            class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-sm text-sm font-bold transition-all cursor-pointer flex items-center whitespace-nowrap flex-shrink-0"
           >
-            <Plus class="w-4 h-4 mr-1" /> 生成密钥
+            <Plus class="w-4 h-4 mr-2" /> 生成密钥
           </button>
         </div>
 

@@ -1,93 +1,102 @@
 <template>
   <div
-    class="min-h-screen bg-[#F0FDFA] flex flex-col text-[#134E4A] font-sans transition-colors duration-200"
+    class="min-h-screen bg-bg-main flex flex-col text-text-main font-sans transition-colors duration-200"
   >
     <!-- Top Navigation (Web) -->
     <header
-      class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200 shadow-sm hidden md:block"
+      class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-stone-200/60 hidden md:block"
     >
-      <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
         <!-- Logo -->
         <div
-          class="flex items-center space-x-2 cursor-pointer group"
+          class="flex items-center space-x-3 cursor-pointer group flex-shrink-0"
           @click="router.push({ name: 'events' })"
         >
-          <BookOpen class="w-6 h-6 text-[#0D9488] group-hover:text-[#14B8A6] transition-colors" />
-          <span class="text-lg font-semibold text-[#134E4A]">岁月史书</span>
+          <div class="p-2 bg-stone-900 text-white rounded-sm group-hover:bg-stone-800 transition-colors">
+            <BookOpen class="w-5 h-5" />
+          </div>
+          <span class="text-xl font-serif font-bold tracking-tight text-stone-900 whitespace-nowrap">岁月史书</span>
         </div>
 
         <!-- Desktop Nav Links -->
-        <nav class="flex items-center space-x-1">
+        <nav class="flex items-center space-x-1 overflow-x-auto no-scrollbar">
           <button
             v-for="item in navItems"
             :key="item.key"
             @click="handleMenuClick(item.key)"
-            class="px-3 py-2 rounded-md flex items-center space-x-1.5 transition-colors duration-200"
+            class="px-4 py-2 rounded-sm flex items-center space-x-2 transition-all duration-200 group flex-shrink-0 whitespace-nowrap"
             :class="
               currentRoute === item.key
-                ? 'bg-[#0D9488]/10 text-[#0D9488] font-medium'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 cursor-pointer'
+                ? 'bg-stone-100 text-stone-900 font-semibold'
+                : 'text-stone-500 hover:text-stone-900 cursor-pointer'
             "
           >
-            <component :is="item.icon" class="w-4 h-4" />
-            <span class="text-sm">{{ item.label }}</span>
+            <component :is="item.icon" class="w-4 h-4 transition-transform group-hover:scale-110" />
+            <span class="text-sm tracking-wide">{{ item.label }}</span>
           </button>
         </nav>
 
         <!-- Search & Actions -->
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-4">
           <div class="relative group">
             <Search
-              class="w-4 h-4 absolute left-2.5 top-2.5 text-gray-400 group-focus-within:text-[#0D9488] transition-colors"
+              class="w-4 h-4 absolute left-3 top-2.5 text-stone-400 group-focus-within:text-stone-900 transition-colors"
             />
             <input
               v-model="searchQuery"
               @keyup.enter="handleSearch"
               type="text"
-              placeholder="搜索..."
-              class="pl-9 pr-3 py-1.5 w-48 bg-gray-50 border border-transparent focus:border-[#0D9488] focus:bg-white rounded-full text-sm outline-none transition-all duration-200"
+              placeholder="寻找记忆..."
+              class="pl-9 pr-4 py-2 w-40 focus:w-56 bg-stone-50 border border-stone-100 focus:border-stone-300 focus:bg-white rounded-sm text-sm outline-none transition-all duration-300 placeholder:text-stone-300"
             />
           </div>
 
-          <button
-            @click="appStore.toggleTheme()"
-            class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
-            :title="appStore.isDark ? '切换到浅色模式' : '切换到深色模式'"
-          >
-            <Sun v-if="appStore.isDark" class="w-5 h-5" />
-            <Moon v-else class="w-5 h-5" />
-          </button>
+          <div class="h-6 w-px bg-stone-200 mx-1"></div>
 
-          <button
-            @click="router.push({ name: 'audit' })"
-            class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
-            title="操作日志"
-          >
-            <ScrollText class="w-5 h-5" />
-          </button>
+          <div class="flex items-center space-x-1">
+            <button
+              @click="appStore.toggleTheme()"
+              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors cursor-pointer"
+              :title="appStore.isDark ? '浅色模式' : '深色模式'"
+            >
+              <Sun v-if="appStore.isDark" class="w-5 h-5" />
+              <Moon v-else class="w-5 h-5" />
+            </button>
 
-          <button
-            @click="router.push({ name: 'settings' })"
-            class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
-          >
-            <Settings class="w-5 h-5" />
-          </button>
+            <button
+              @click="router.push({ name: 'audit' })"
+              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors cursor-pointer"
+              title="操作审计"
+            >
+              <ScrollText class="w-5 h-5" />
+            </button>
+
+            <button
+              @click="router.push({ name: 'settings' })"
+              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors cursor-pointer"
+              title="设置"
+            >
+              <Settings class="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     </header>
 
     <!-- Mobile Top Header -->
     <header
-      class="md:hidden sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200 shadow-sm"
+      class="md:hidden sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-stone-100 shadow-sm"
     >
-      <div class="px-4 h-14 flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          <BookOpen class="w-5 h-5 text-[#0D9488]" />
-          <span class="text-base font-semibold text-[#134E4A]">{{ pageTitle }}</span>
+      <div class="px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="p-1.5 bg-stone-900 text-white rounded-sm">
+            <BookOpen class="w-4 h-4" />
+          </div>
+          <span class="text-lg font-serif font-bold text-stone-900">{{ pageTitle }}</span>
         </div>
         <button
           @click="router.push({ name: 'search' })"
-          class="p-2 text-gray-500 hover:text-[#0D9488] transition-colors cursor-pointer"
+          class="p-2 text-stone-500 hover:text-stone-900 transition-colors cursor-pointer"
         >
           <Search class="w-5 h-5" />
         </button>
@@ -95,7 +104,7 @@
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-1 max-w-4xl w-full mx-auto p-4 md:py-8 pb-24 md:pb-8">
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:px-8 md:py-10 pb-24 md:pb-12">
       <router-view v-slot="{ Component }">
         <transition name="fade-slide" mode="out-in">
           <keep-alive :include="cachedViews">
@@ -107,29 +116,30 @@
 
     <!-- Mobile Bottom Tab Bar -->
     <nav
-      class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+      class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 pb-safe z-50"
     >
-      <div class="flex items-center justify-around h-14 px-2">
+      <div class="flex items-center justify-around h-16 px-2">
         <button
           v-for="item in navItems"
           :key="item.key"
           @click="handleMenuClick(item.key)"
-          class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 cursor-pointer"
+          class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-200 cursor-pointer"
           :class="
-            currentRoute === item.key ? 'text-[#0D9488]' : 'text-gray-500 hover:text-gray-900'
+            currentRoute === item.key ? 'text-stone-900' : 'text-stone-400 hover:text-stone-600'
           "
         >
           <component
             :is="item.icon"
             class="w-5 h-5"
-            :class="{ 'fill-current': currentRoute === item.key }"
+            :class="{ 'stroke-[2.5px]': currentRoute === item.key }"
           />
-          <span class="text-[10px] font-medium leading-none">{{ item.label }}</span>
+          <span class="text-[10px] font-bold tracking-wider uppercase">{{ item.label }}</span>
         </button>
       </div>
     </nav>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';

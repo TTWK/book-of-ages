@@ -1,5 +1,5 @@
 <template>
-  <div class="relative min-h-[calc(100vh-8rem)]">
+  <div class="relative min-h-[calc(100vh-10rem)]">
     <!-- Pull to Refresh Indicator -->
     <PullToRefresh
       :pull-distance="pullDistance"
@@ -8,19 +8,19 @@
     />
 
     <!-- Header Area -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-text-main tracking-tight">收件箱</h1>
-        <p class="text-sm text-neutral-500 mt-1">待处理的抓取记录</p>
+        <h1 class="text-4xl font-serif font-bold text-stone-900 mb-2">收件箱</h1>
+        <p class="text-stone-500 font-medium">审阅 Agent 采集的片段，编撰入册</p>
       </div>
 
       <button
         @click="loadEvents"
         :disabled="loading"
-        class="flex items-center px-3 py-2 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-700 rounded-md font-medium transition-colors duration-200 cursor-pointer disabled:opacity-50 shadow-sm"
+        class="flex items-center px-4 py-2 bg-white border border-stone-200 hover:border-stone-900 text-stone-900 rounded-sm font-semibold transition-all duration-200 cursor-pointer disabled:opacity-50 whitespace-nowrap flex-shrink-0"
       >
-        <RefreshCw class="w-4 h-4 mr-1" :class="{ 'animate-spin': loading }" />
-        刷新
+        <RefreshCw class="w-4 h-4 mr-2" :class="{ 'animate-spin': loading }" />
+        刷新状态
       </button>
     </div>
 
@@ -30,36 +30,36 @@
     <EmptyState
       v-else-if="events.length === 0"
       :icon="CheckCircle"
-      title="收件箱已清空"
-      description="干得漂亮！所有抓取的记录都已处理完毕。"
-      icon-bg-class="bg-primary-100"
-      icon-color-class="text-primary-500/40"
+      title="清逸如初"
+      description="所有的采集记录都已审阅完毕，史书已准备就绪。"
+      icon-bg-class="bg-stone-100"
+      icon-color-class="text-stone-300"
     />
 
-    <div v-else class="space-y-3 pb-20">
+    <div v-else class="space-y-4 pb-20">
       <div
         v-for="event in events"
         :key="event.id"
-        class="bg-white p-4 rounded-xl border border-neutral-100 shadow-sm hover:shadow-md transition-shadow duration-200 group flex flex-col md:flex-row md:items-center justify-between gap-4"
+        class="card-scrapbook p-5 group flex flex-col md:flex-row md:items-center justify-between gap-6"
       >
         <div class="flex-1 min-w-0 cursor-pointer" @click="openPreview(event)">
-          <div class="flex items-start mb-1">
-            <div class="w-2 h-2 mt-2 mr-3 rounded-full bg-cta-500 flex-shrink-0"></div>
+          <div class="flex items-start mb-2">
+            <div class="w-2 h-2 mt-2 mr-4 rounded-full bg-cta-500 flex-shrink-0 animate-pulse"></div>
             <div>
               <h2
-                class="text-base font-semibold text-text-main group-hover:text-primary-600 transition-colors line-clamp-1"
+                class="text-xl font-serif font-bold text-stone-900 group-hover:text-stone-700 transition-colors line-clamp-1 leading-tight"
               >
                 {{ event.title }}
               </h2>
-              <p v-if="event.summary" class="text-sm text-neutral-500 mt-1 line-clamp-1">
+              <p v-if="event.summary" class="text-stone-500 mt-2 text-sm line-clamp-1 leading-relaxed">
                 {{ event.summary }}
               </p>
             </div>
           </div>
 
-          <div class="flex items-center text-xs text-neutral-400 pl-5 mt-2 space-x-4">
+          <div class="flex items-center text-xs font-bold tracking-widest text-stone-400 uppercase pl-6 mt-2 space-x-6">
             <span v-if="event.event_date" class="flex items-center">
-              <Calendar class="w-3.5 h-3.5 mr-1" />
+              <Calendar class="w-3.5 h-3.5 mr-1.5" />
               {{ new Date(event.event_date).toLocaleDateString() }}
             </span>
             <a
@@ -67,33 +67,34 @@
               :href="event.source_url"
               target="_blank"
               @click.stop
-              class="flex items-center text-primary-600 hover:text-primary-500 hover:underline"
+              class="flex items-center text-stone-600 hover:text-stone-900 transition-colors"
             >
-              <Link class="w-3.5 h-3.5 mr-1" />
-              来源链接
+              <Link class="w-3.5 h-3.5 mr-1.5" />
+              原始档案
             </a>
           </div>
         </div>
 
         <!-- Quick Actions -->
-        <div class="flex items-center justify-end space-x-2 pl-5 md:pl-0 shrink-0">
+        <div class="flex items-center justify-end space-x-2 pl-6 md:pl-0 shrink-0">
           <button
             @click.stop="handleArchive(event)"
-            class="px-3 py-1.5 text-sm text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-md font-medium transition-colors cursor-pointer flex items-center"
+            class="px-4 py-2 text-sm text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-sm font-bold transition-all cursor-pointer flex items-center"
           >
-            <Archive class="w-4 h-4 mr-1" />
+            <Archive class="w-4 h-4 mr-2" />
             归档
           </button>
           <button
             @click.stop="handleConfirm(event)"
-            class="px-4 py-1.5 text-sm text-white bg-cta-500 hover:bg-cta-400 rounded-md font-medium transition-colors cursor-pointer flex items-center shadow-sm shadow-cta-500/20"
+            class="px-6 py-2 text-sm text-white bg-stone-900 hover:bg-stone-800 rounded-sm font-bold transition-all cursor-pointer flex items-center shadow-sm"
           >
-            <Check class="w-4 h-4 mr-1" />
-            收录
+            <Check class="w-4 h-4 mr-2" />
+            入册
           </button>
         </div>
       </div>
     </div>
+
 
     <!-- Preview Modal -->
     <n-modal v-model:show="showPreview" preset="card" class="max-w-2xl" title="预览待处理事件">
@@ -234,7 +235,6 @@ async function handleConfirm(event: Event | null) {
 async function handleArchive(event: Event | null) {
   if (!event) return;
   await archiveEvent(
-    event.id,
     async () => {
       await updateEvent(event.id, { status: 'archived' });
       events.value = events.value.filter((e) => e.id !== event.id);

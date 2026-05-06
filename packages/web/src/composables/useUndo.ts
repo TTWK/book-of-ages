@@ -115,7 +115,6 @@ export function useCommonUndoActions(message: {
      * 删除事件（带撤销）
      */
     deleteEvent: async (
-      eventId: string,
       deleteFn: () => Promise<void>,
       restoreFn: () => Promise<void>,
       eventName = '事件'
@@ -132,7 +131,6 @@ export function useCommonUndoActions(message: {
      * 归档事件（带撤销）
      */
     archiveEvent: async (
-      eventId: string,
       archiveFn: () => Promise<void>,
       unarchiveFn: () => Promise<void>,
       eventName = '事件'

@@ -196,12 +196,45 @@ export async function deleteEvent(id: string): Promise<boolean> {
 
 /**
  * 批量创建事件（用于 Agent 推送）
+ * 使用事务保证原子性
  */
 export async function batchCreateEvents(inputs: CreateEventInput[]): Promise<Event[]> {
   const events: Event[] = [];
+  const now = new Date().toISOString();
+  const queries: Array<{ sql: string; params: unknown[] }> = [];
+  const ids: string[] = [];
+
   for (const input of inputs) {
-    const event = await createEvent(input);
-    events.push(event);
+    const id = uuidv4();
+    const status = input.status || 'draft';
+    ids.push(id);
+    queries.push({
+      sql: `
+        INSERT INTO events (id, title, summary, content, status, event_date, source_url, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      params: [
+        id,
+        input.title,
+        input.summary || null,
+        input.content || null,
+        status,
+        input.event_date || null,
+        input.source_url || null,
+        now,
+        now,
+      ],
+    });
   }
+
+  const { transaction } = await import('../db');
+  await transaction(queries);
+
+  // 批量获取结果
+  for (const id of ids) {
+    const event = await getEventById(id);
+    if (event) events.push(event);
+  }
+
   return events;
 }

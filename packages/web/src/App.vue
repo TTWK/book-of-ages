@@ -117,5 +117,4 @@ const themeOverrides: GlobalThemeOverrides = {
     borderRadius: '4px',
   },
 };
-
 </script>

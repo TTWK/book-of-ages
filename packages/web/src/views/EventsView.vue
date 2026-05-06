@@ -140,7 +140,7 @@ function openEditModal(event: Event) {
     content: event.content || '',
     event_date: event.event_date ? new Date(event.event_date).getTime() : null,
     source_url: event.source_url || '',
-    tags: [], 
+    tags: [],
   };
   showEventModal.value = true;
 }

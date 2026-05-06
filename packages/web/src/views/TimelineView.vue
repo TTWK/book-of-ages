@@ -49,8 +49,12 @@
         <div
           class="sticky top-0 z-10 bg-bg-main/90 backdrop-blur-sm py-4 mb-6 border-b border-stone-100 flex items-end justify-between"
         >
-          <h2 class="text-2xl font-serif font-bold text-stone-900 leading-none">{{ group.label }}</h2>
-          <p class="text-xs font-bold tracking-widest text-stone-400 uppercase">{{ group.events.length }} 卷记录</p>
+          <h2 class="text-2xl font-serif font-bold text-stone-900 leading-none">
+            {{ group.label }}
+          </h2>
+          <p class="text-xs font-bold tracking-widest text-stone-400 uppercase">
+            {{ group.events.length }} 卷记录
+          </p>
         </div>
 
         <!-- Events in Group -->
@@ -62,7 +66,9 @@
             @click="openEvent(event.id)"
           >
             <!-- Timeline connector dot -->
-            <div class="absolute -left-[41px] top-[26px] w-4 h-4 rounded-full border-4 border-white bg-stone-900 shadow-sm hidden md:block group-hover:scale-125 transition-transform"></div>
+            <div
+              class="absolute -left-[41px] top-[26px] w-4 h-4 rounded-full border-4 border-white bg-stone-900 shadow-sm hidden md:block group-hover:scale-125 transition-transform"
+            ></div>
 
             <div class="flex items-start">
               <div class="flex-1 min-w-0">
@@ -72,16 +78,22 @@
                   >
                     {{ event.title }}
                   </h3>
-                  <span v-if="event.event_date" class="text-xs font-bold tracking-widest text-stone-400 uppercase whitespace-nowrap ml-4">
+                  <span
+                    v-if="event.event_date"
+                    class="text-xs font-bold tracking-widest text-stone-400 uppercase whitespace-nowrap ml-4"
+                  >
                     {{ formatDateShort(event.event_date) }}
                   </span>
                 </div>
-                
+
                 <p v-if="event.summary" class="text-stone-600 text-sm leading-relaxed line-clamp-2">
                   {{ event.summary }}
                 </p>
 
-                <div v-if="(event as any).tags && (event as any).tags.length > 0" class="flex flex-wrap gap-2 mt-4">
+                <div
+                  v-if="(event as any).tags && (event as any).tags.length > 0"
+                  class="flex flex-wrap gap-2 mt-4"
+                >
                   <span
                     v-for="tag in (event as any).tags"
                     :key="tag.id"
@@ -96,7 +108,6 @@
         </div>
       </div>
     </div>
-
 
     <!-- Pagination -->
     <div v-if="total > pageSize" class="flex justify-center mt-6">

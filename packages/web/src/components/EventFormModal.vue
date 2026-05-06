@@ -7,10 +7,7 @@
     :title="editingId ? '修订记忆' : '开启新篇章'"
   >
     <n-form ref="formRef" :model="form" :rules="rules">
-      <div
-        v-if="!editingId"
-        class="mb-8 p-6 bg-stone-50 rounded-sm border border-stone-100"
-      >
+      <div v-if="!editingId" class="mb-8 p-6 bg-stone-50 rounded-sm border border-stone-100">
         <label class="block text-xs font-bold tracking-widest text-stone-900 uppercase mb-3"
           >灵感捕捉 (从 URL 导入)</label
         >
@@ -57,12 +54,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <n-form-item label="发生日期" path="event_date">
-          <n-date-picker
-            v-model:value="form.event_date"
-            type="date"
-            clearable
-            class="w-full"
-          />
+          <n-date-picker v-model:value="form.event_date" type="date" clearable class="w-full" />
         </n-form-item>
         <n-form-item label="原始来源" path="source_url">
           <n-input v-model:value="form.source_url" placeholder="https://..." />
@@ -136,10 +128,14 @@ const importUrl = ref('');
 
 const form = ref({ ...props.initialData });
 
-watch(() => props.initialData, (newVal) => {
-  form.value = { ...newVal };
-  importUrl.value = '';
-}, { deep: true });
+watch(
+  () => props.initialData,
+  (newVal) => {
+    form.value = { ...newVal };
+    importUrl.value = '';
+  },
+  { deep: true }
+);
 
 const rules: FormRules = {
   title: { required: true, message: '名不正则言不顺，请输入标题', trigger: 'blur' },

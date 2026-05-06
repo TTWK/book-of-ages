@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "allow": ["Bash(Get-ChildItem packages *)", "Bash(Select-Object -ExpandProperty Name)"]
+  }
+}

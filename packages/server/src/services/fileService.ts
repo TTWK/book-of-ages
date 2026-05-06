@@ -62,7 +62,6 @@ export function getFilePath(filePath: string): string {
   return path.join(DATA_DIR, filePath);
 }
 
-
 /**
  * 删除文件
  * @param filePath 相对路径

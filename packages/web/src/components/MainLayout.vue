@@ -12,10 +12,14 @@
           class="flex items-center space-x-3 cursor-pointer group flex-shrink-0"
           @click="router.push({ name: 'events' })"
         >
-          <div class="p-2 bg-stone-900 text-white rounded-sm group-hover:bg-stone-800 transition-colors">
+          <div
+            class="p-2 bg-stone-900 text-white rounded-sm group-hover:bg-stone-800 transition-colors"
+          >
             <BookOpen class="w-5 h-5" />
           </div>
-          <span class="text-xl font-serif font-bold tracking-tight text-stone-900 whitespace-nowrap">岁月史书</span>
+          <span class="text-xl font-serif font-bold tracking-tight text-stone-900 whitespace-nowrap"
+            >岁月史书</span
+          >
         </div>
 
         <!-- Desktop Nav Links -->
@@ -139,7 +143,6 @@
     </nav>
   </div>
 </template>
-
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';

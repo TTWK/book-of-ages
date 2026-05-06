@@ -44,20 +44,27 @@
       >
         <div class="flex-1 min-w-0 cursor-pointer" @click="openPreview(event)">
           <div class="flex items-start mb-2">
-            <div class="w-2 h-2 mt-2 mr-4 rounded-full bg-cta-500 flex-shrink-0 animate-pulse"></div>
+            <div
+              class="w-2 h-2 mt-2 mr-4 rounded-full bg-cta-500 flex-shrink-0 animate-pulse"
+            ></div>
             <div>
               <h2
                 class="text-xl font-serif font-bold text-stone-900 group-hover:text-stone-700 transition-colors line-clamp-1 leading-tight"
               >
                 {{ event.title }}
               </h2>
-              <p v-if="event.summary" class="text-stone-500 mt-2 text-sm line-clamp-1 leading-relaxed">
+              <p
+                v-if="event.summary"
+                class="text-stone-500 mt-2 text-sm line-clamp-1 leading-relaxed"
+              >
                 {{ event.summary }}
               </p>
             </div>
           </div>
 
-          <div class="flex items-center text-xs font-bold tracking-widest text-stone-400 uppercase pl-6 mt-2 space-x-6">
+          <div
+            class="flex items-center text-xs font-bold tracking-widest text-stone-400 uppercase pl-6 mt-2 space-x-6"
+          >
             <span v-if="event.event_date" class="flex items-center">
               <Calendar class="w-3.5 h-3.5 mr-1.5" />
               {{ new Date(event.event_date).toLocaleDateString() }}
@@ -94,7 +101,6 @@
         </div>
       </div>
     </div>
-
 
     <!-- Preview Modal -->
     <n-modal v-model:show="showPreview" preset="card" class="max-w-2xl" title="预览待处理事件">

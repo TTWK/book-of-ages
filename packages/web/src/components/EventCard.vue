@@ -4,12 +4,12 @@
     class="card-scrapbook group p-6 relative overflow-hidden cursor-pointer"
   >
     <!-- Status Indicator Dot -->
-    <div 
+    <div
       class="absolute left-0 top-0 bottom-0 w-1"
       :class="{
         'bg-stone-200': event.status === 'draft',
         'bg-stone-900': event.status === 'confirmed',
-        'bg-stone-400': event.status === 'archived'
+        'bg-stone-400': event.status === 'archived',
       }"
     ></div>
 
@@ -20,7 +20,9 @@
         >
           {{ event.title }}
         </h2>
-        <div class="flex items-center space-x-4 text-xs font-bold tracking-widest text-stone-400 uppercase">
+        <div
+          class="flex items-center space-x-4 text-xs font-bold tracking-widest text-stone-400 uppercase"
+        >
           <span v-if="event.event_date" class="flex items-center">
             <Calendar class="w-3.5 h-3.5 mr-1.5" />
             {{ formatDate(event.event_date) }}
@@ -28,7 +30,7 @@
           <StatusBadge :status="event.status" />
         </div>
       </div>
-      
+
       <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           @click.stop="$emit('edit', event)"
@@ -69,10 +71,10 @@ defineEmits<{
 }>();
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString(undefined, { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  return new Date(dateStr).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   });
 }
 </script>

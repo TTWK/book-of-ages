@@ -204,7 +204,6 @@ const navItems = [
   { label: '时间线', key: 'timeline', icon: CalendarDays },
   { label: '时间分析', key: 'analytics', icon: TrendingUp },
   { label: '标签', key: 'tags', icon: Tags },
-  { label: '搜索', key: 'search', icon: Search },
 ];
 
 function handleMenuClick(key: string) {

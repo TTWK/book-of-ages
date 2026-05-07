@@ -4,7 +4,7 @@
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
       <div>
         <h1 class="text-4xl font-serif font-bold text-stone-900 mb-2">事件库</h1>
-        <p class="text-stone-500 font-medium">梳理历史脉络，珍藏岁月记忆</p>
+        <p class="text-stone-500 font-medium no-caret">梳理历史脉络，珍藏岁月记忆</p>
       </div>
 
       <div class="flex items-center space-x-3">

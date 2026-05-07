@@ -11,7 +11,7 @@
         <n-select
           v-model:value="statusFilter"
           :options="statusOptions"
-          class="w-36"
+          class="w-44"
           @update:value="loadEvents"
         />
         <button

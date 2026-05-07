@@ -14,7 +14,7 @@
             { label: '按年编撰', value: 'year' },
             { label: '按月编撰', value: 'month' },
           ]"
-          class="w-36"
+          class="w-44"
           @update:value="loadTimeline"
         />
         <button

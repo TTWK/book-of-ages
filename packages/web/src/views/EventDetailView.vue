@@ -161,12 +161,12 @@
             <span
               v-for="tag in tags"
               :key="tag.id"
-              class="group/tag px-2.5 py-1 bg-primary-50 text-primary-600 border border-primary-100 rounded-md text-xs font-medium flex items-center transition-all"
+              class="group/tag px-2.5 py-1 bg-stone-100 text-stone-600 border border-stone-200 rounded-md text-xs font-medium flex items-center transition-all"
             >
               <Hash class="w-3 h-3 mr-1 opacity-70" />
               {{ tag.name }}
               <X
-                class="w-3 h-3 ml-1 cursor-pointer opacity-0 group-hover/tag:opacity-100 hover:text-error-500 transition-opacity"
+                class="w-3 h-3 ml-1.5 cursor-pointer text-stone-400 hover:text-red-500 transition-colors"
                 @click.stop="handleRemoveTag(tag)"
               />
             </span>

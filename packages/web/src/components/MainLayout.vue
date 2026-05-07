@@ -4,7 +4,7 @@
   >
     <!-- Top Navigation (Web) -->
     <header
-      class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-stone-200/60 hidden md:block"
+      class="sticky top-0 z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-md border-b border-stone-200/60 dark:border-stone-800/60 hidden md:block"
     >
       <div class="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
         <!-- Logo -->
@@ -13,11 +13,12 @@
           @click="router.push({ name: 'events' })"
         >
           <div
-            class="p-2 bg-stone-900 text-white rounded-sm group-hover:bg-stone-800 transition-colors"
+            class="p-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-sm group-hover:bg-stone-800 dark:group-hover:bg-stone-200 transition-colors"
           >
             <BookOpen class="w-5 h-5" />
           </div>
-          <span class="text-xl font-serif font-bold tracking-tight text-stone-900 whitespace-nowrap"
+          <span
+            class="text-xl font-serif font-bold tracking-tight text-stone-900 dark:text-stone-100 whitespace-nowrap"
             >岁月史书</span
           >
         </div>
@@ -31,8 +32,8 @@
             class="px-4 py-2 rounded-sm flex items-center space-x-2 transition-all duration-200 group flex-shrink-0 whitespace-nowrap"
             :class="
               currentRoute === item.key
-                ? 'bg-stone-100 text-stone-900 font-semibold'
-                : 'text-stone-500 hover:text-stone-900 cursor-pointer'
+                ? 'bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100 font-semibold'
+                : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 cursor-pointer'
             "
           >
             <component :is="item.icon" class="w-4 h-4 transition-transform group-hover:scale-110" />
@@ -44,23 +45,23 @@
         <div class="flex items-center space-x-4">
           <div class="relative group">
             <Search
-              class="w-4 h-4 absolute left-3 top-2.5 text-stone-400 group-focus-within:text-stone-900 transition-colors"
+              class="w-4 h-4 absolute left-3 top-2.5 text-stone-400 group-focus-within:text-stone-900 dark:group-focus-within:text-stone-100 transition-colors"
             />
             <input
               v-model="searchQuery"
               @keyup.enter="handleSearch"
               type="text"
               placeholder="寻找记忆..."
-              class="pl-9 pr-4 py-2 w-40 focus:w-56 bg-stone-50 border border-stone-100 focus:border-stone-300 focus:bg-white rounded-sm text-sm outline-none transition-all duration-300 placeholder:text-stone-300"
+              class="pl-9 pr-4 py-2 w-40 focus:w-56 bg-stone-50 dark:bg-stone-900 border border-stone-100 dark:border-stone-800 focus:border-stone-300 dark:focus:border-stone-600 focus:bg-white dark:focus:bg-stone-800 rounded-sm text-sm outline-none transition-all duration-300 placeholder:text-stone-300 dark:placeholder:text-stone-600 dark:text-stone-200"
             />
           </div>
 
-          <div class="h-6 w-px bg-stone-200 mx-1"></div>
+          <div class="h-6 w-px bg-stone-200 dark:bg-stone-800 mx-1"></div>
 
           <div class="flex items-center space-x-1">
             <button
               @click="appStore.toggleTheme()"
-              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors cursor-pointer"
+              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100 transition-colors cursor-pointer"
               :title="appStore.isDark ? '浅色模式' : '深色模式'"
             >
               <Sun v-if="appStore.isDark" class="w-5 h-5" />
@@ -69,7 +70,7 @@
 
             <button
               @click="router.push({ name: 'analytics' })"
-              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors cursor-pointer"
+              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100 transition-colors cursor-pointer"
               title="时间分析"
             >
               <TrendingUp class="w-5 h-5" />
@@ -77,7 +78,7 @@
 
             <button
               @click="router.push({ name: 'audit' })"
-              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors cursor-pointer"
+              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100 transition-colors cursor-pointer"
               title="操作审计"
             >
               <ScrollText class="w-5 h-5" />
@@ -85,7 +86,7 @@
 
             <button
               @click="router.push({ name: 'settings' })"
-              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors cursor-pointer"
+              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100 transition-colors cursor-pointer"
               title="设置"
             >
               <Settings class="w-5 h-5" />
@@ -97,18 +98,22 @@
 
     <!-- Mobile Top Header -->
     <header
-      class="md:hidden sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-stone-100 shadow-sm"
+      class="md:hidden sticky top-0 z-50 bg-white/90 dark:bg-stone-950/90 backdrop-blur border-b border-stone-100 dark:border-stone-800 shadow-sm"
     >
       <div class="px-4 h-16 flex items-center justify-between">
         <div class="flex items-center space-x-3">
-          <div class="p-1.5 bg-stone-900 text-white rounded-sm">
+          <div
+            class="p-1.5 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-sm"
+          >
             <BookOpen class="w-4 h-4" />
           </div>
-          <span class="text-lg font-serif font-bold text-stone-900">{{ pageTitle }}</span>
+          <span class="text-lg font-serif font-bold text-stone-900 dark:text-stone-100">{{
+            pageTitle
+          }}</span>
         </div>
         <button
           @click="router.push({ name: 'search' })"
-          class="p-2 text-stone-500 hover:text-stone-900 transition-colors cursor-pointer"
+          class="p-2 text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 transition-colors cursor-pointer"
         >
           <Search class="w-5 h-5" />
         </button>
@@ -128,7 +133,7 @@
 
     <!-- Mobile Bottom Tab Bar -->
     <nav
-      class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 pb-safe z-50"
+      class="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-stone-950 border-t border-stone-100 dark:border-stone-800 pb-safe z-50"
     >
       <div class="flex items-center justify-around h-16 px-2">
         <button
@@ -137,7 +142,9 @@
           @click="handleMenuClick(item.key)"
           class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-200 cursor-pointer"
           :class="
-            currentRoute === item.key ? 'text-stone-900' : 'text-stone-400 hover:text-stone-600'
+            currentRoute === item.key
+              ? 'text-stone-900 dark:text-stone-100'
+              : 'text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400'
           "
         >
           <component

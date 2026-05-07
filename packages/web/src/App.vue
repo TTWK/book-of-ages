@@ -37,27 +37,66 @@ onMounted(() => {
   });
 });
 
-// 监听主题变化，持久化到 localStorage
+// 监听主题变化，持久化到 localStorage 并同步到 DOM
 watch(
   () => appStore.isDark,
   (isDark) => {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  }
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  },
+  { immediate: true }
 );
 
 const currentTheme = computed(() => (appStore.isDark ? darkTheme : null));
 
 const themeOverrides = computed<GlobalThemeOverrides>(() => {
-  // 如果是深色模式，使用 Naive UI 默认的深色配置，或者针对深色模式进行微调
+  // 如果是深色模式，使用 Naive UI 默认的深色配置，并进行微调以契合 Stone 色系
   if (appStore.isDark) {
     return {
       common: {
-        primaryColor: '#F5F5F4', // Stone-100 for dark mode contrast
+        primaryColor: '#F5F5F4', // Stone-100
         primaryColorHover: '#E7E5E4',
         primaryColorPressed: '#D6D3D1',
         primaryColorSuppl: 'rgba(245, 245, 244, 0.1)',
+
+        infoColor: '#D6D3D1',
+        infoColorHover: '#E7E5E4',
+        infoColorPressed: '#A8A29E',
+
+        successColor: '#22C55E',
+        errorColor: '#F43F5E',
+
+        textColorBase: '#F5F5F4',
+        textColor1: '#F5F5F4',
+        textColor2: '#D6D3D1',
+        textColor3: '#A8A29E',
+
+        borderColor: '#292524', // Stone-800
+        bodyColor: '#0C0A09', // Stone-950
+        cardColor: '#1C1917', // Stone-900
+        modalColor: '#1C1917',
+        popoverColor: '#1C1917',
+
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
         borderRadius: '4px',
+      },
+      Button: {
+        borderRadius: '2px',
+        fontWeight: '500',
+      },
+      Input: {
+        borderRadius: '2px',
+        borderColor: '#292524',
+        borderColorHover: '#44403C',
+        borderColorFocus: '#F5F5F4',
+      },
+      Card: {
+        borderRadius: '4px',
+        borderColor: '#292524',
       },
     };
   }

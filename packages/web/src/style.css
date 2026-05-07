@@ -67,6 +67,8 @@
   --color-cta: #ca8a04;
   --color-bg-main: #fdfcfb;
   --color-text-main: #1c1917;
+  --color-card-bg: #ffffff;
+  --color-border-main: #e7e5e4;
 
   /* --- Border Radius --- */
   --radius-sm: 0.125rem;
@@ -77,6 +79,16 @@
   /* --- Shadows --- */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  --color-bg-main: #0c0a09; /* stone-950 */
+  --color-text-main: #f5f5f4; /* stone-100 */
+  --color-card-bg: #1c1917; /* stone-900 */
+  --color-border-main: #292524; /* stone-800 */
+  --color-primary: #f5f5f4;
+  --color-neutral-200: #292524;
+  --color-neutral-300: #44403c;
 }
 
 /* ==================== Base Styles ==================== */
@@ -102,10 +114,15 @@ body {
   padding: 0;
   min-height: 100vh;
   background-color: var(--color-bg-main);
-  background-image:
-    radial-gradient(at 0% 0%, rgba(248, 250, 252, 0.5) 0, transparent 50%),
-    radial-gradient(at 50% 0%, rgba(253, 252, 251, 0.5) 0, transparent 50%);
+  background-image: radial-gradient(at 0% 0%, rgba(24, 24, 27, 0.05) 0, transparent 50%);
   color: var(--color-text-main);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.dark body {
+  background-image: radial-gradient(at 0% 0%, rgba(0, 0, 0, 0.4) 0, transparent 50%);
 }
 
 #app {
@@ -147,8 +164,8 @@ h3,
 /* ==================== Custom Utilities ==================== */
 
 .card-scrapbook {
-  background: white;
-  border: 1px solid var(--color-neutral-200);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border-main);
   box-shadow: var(--shadow-sm);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

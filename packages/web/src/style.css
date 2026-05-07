@@ -176,6 +176,23 @@ h3,
   transform: translateY(-2px);
 }
 
+/* ==================== Caret Control ==================== */
+
+/* 针对标题隐藏光标 */
+h1,
+h2,
+h3,
+.text-h1,
+.text-h2,
+.text-h3 {
+  caret-color: transparent;
+}
+
+/* 通用隐藏光标工具类 */
+.no-caret {
+  caret-color: transparent;
+}
+
 /* ==================== Selection ==================== */
 
 ::selection {

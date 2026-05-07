@@ -1,113 +1,114 @@
-# 开发者指南
+# 开发者指南 (Developer Guide)
 
-## 项目结构
+> 本文档面向本项目的所有开发者（包括人类和 AI Agent），涵盖了项目的架构、开发流程和技术规范。
+
+## 项目架构
+
+本项目采用 Monorepo 结构，基于 npm workspaces 管理：
 
 ```
 book-of-ages/
 ├── packages/
-│   ├── web/            # 前端（Vue 3 + Naive UI）
+│   ├── web/                 # 前端 (Vue 3, Naive UI, TailwindCSS)
 │   │   ├── src/
-│   │   │   ├── views/        # 页面视图（8 个）
-│   │   │   ├── components/   # 通用组件
-│   │   │   ├── api/          # API 客户端封装
-│   │   │   ├── router/       # 路由配置
-│   │   │   └── stores/       # Pinia 状态管理
-│   │   └── vitest.config.ts
-│   ├── server/         # 后端（Fastify + SQLite）
+│   │   │   ├── api/         # API 客户端封装
+│   │   │   ├── components/  # 通用 UI 组件
+│   │   │   ├── views/       # 页面视图 (事件库、详情、搜索等)
+│   │   │   ├── router/      # Vue Router 路由配置
+│   │   │   └── stores/      # Pinia 状态管理
+│   ├── server/              # 后端 (Fastify, TypeScript, SQLite)
 │   │   ├── src/
-│   │   │   ├── routes/       # API 路由（5 个文件）
-│   │   │   ├── services/     # 业务逻辑（9 个文件）
-│   │   │   ├── db/           # 数据库连接 + Schema
-│   │   │   └── middleware/   # 认证中间件
-│   │   └── vitest.config.ts
-│   └── shared/         # 前后端共享 TypeScript 类型
-├── data/               # 运行时数据（SQLite + 上传文件）
-└── docs/               # 项目文档
+│   │   │   ├── db/          # 数据库连接和 Schema 定义
+│   │   │   ├── routes/      # Fastify API 路由
+│   │   │   ├── services/    # 核心业务逻辑
+│   │   │   └── middleware/  # 认证和中间件
+│   └── shared/              # 前后端共享的 TypeScript 类型定义
+├── data/                    # 运行时数据目录 (SQLite 数据库、上传的附件)
+└── docs/                    # 项目文档和设计规范
 ```
+
+## 技术栈
+
+| 层级     | 技术                                                           |
+| -------- | -------------------------------------------------------------- |
+| **前端** | Vue 3 (Composition API), Vite, Naive UI, Pinia, TailwindCSS v4 |
+| **后端** | Fastify, TypeScript, sqlite3 (异步绑定)                        |
+| **存储** | SQLite (单文件数据库，无外部依赖)                              |
+| **测试** | Vitest                                                         |
 
 ## 开发流程
 
-### 启动
+### 1. 环境准备
+
+- **Node.js**: >= 20
+- **npm**: >= 9
+
+### 2. 启动项目
 
 ```bash
 npm install
 
-# 分别启动
-npm run dev:server    # 后端 → :3000
-npm run dev:web       # 前端 → :5173
+# 启动后端 (默认端口 3000)
+npm run dev:server
+
+# 启动前端 (默认端口 5173)
+npm run dev:web
 ```
 
-### 代码质量
+### 3. 添加新功能指南
 
-| 命令                | 作用                |
-| ------------------- | ------------------- |
-| `npm run format`    | Prettier 格式化     |
-| `npm run lint`      | ESLint 检查         |
-| `npm run typecheck` | TypeScript 类型检查 |
-| `npm run test`      | 运行测试            |
-| `npm run build`     | 构建                |
+1.  在 `packages/shared/src/index.ts` 中定义或更新数据结构。
+2.  在 `packages/server/src/services/` 实现后端业务逻辑。
+3.  在 `packages/server/src/routes/` 注册 API 路由。
+4.  在 `packages/web/src/api/` 封装对应的接口调用函数。
+5.  在 `packages/web/src/views/` 或 `components/` 实现前端展示。
+6.  **重要**: 为新功能编写测试，确保覆盖核心逻辑。
 
-提交时会自动运行 format + lint + commitlint。
+## 开发规范
 
-### 提交规范
+### 1. 代码风格
 
-```
-<type>(scope): <描述>
+- **命名**: 文件使用 `kebab-case`，组件使用 `PascalCase`，函数变量使用 `camelCase`。
+- **TypeScript**: 严格模式，必须显式标注函数参数和返回值的类型。
+- **异步**: 优先使用 `async/await`。
 
-# type: feat | fix | docs | style | refactor | test | chore
-# scope（可选）: server | web | db
-```
+### 2. 提交规范 (Conventional Commits)
 
-## 如何添加新功能
+每次提交必须遵循以下格式：`<type>(scope): <description>`
 
-```
-1. 在 packages/shared/src/index.ts 添加类型定义
-2. 在 packages/server/src/services/ 实现业务逻辑
-3. 在 packages/server/src/routes/ 添加 API 路由
-4. 在 packages/web/src/api/ 添加前端 API 调用
-5. 在 packages/web/src/views/ 添加页面组件
-6. 为新功能编写测试（放在各包的 __tests__/ 目录）
-```
+- `feat`: 新功能
+- `fix`: 修复
+- `docs`: 文档
+- `refactor`: 重构
+- `chore`: 构建/配置
 
-每次提交前确保 `npm run lint && npm run test && npm run build` 通过。
+项目配置了 `husky` 和 `commitlint`，不符合规范的提交将被拦截。
 
-## 数据库
+### 3. 测试与质量
 
-- 使用 `sqlite3`（异步绑定）
-- Schema 定义在 `packages/server/src/db/schema.ts`
-- 启动时自动建表（`CREATE TABLE IF NOT EXISTS`），不破坏现有数据
-- 数据库文件位置：`data/book-of-ages.db`
-
-## 认证机制
-
-- Agent 通过 `X-API-Key` 请求头调用受限 API
-- Web 端为可选认证（`optionalAuthMiddleware`），方便本地开发
-- API Key 在"设置"页面管理
-- **已收录（confirmed）事件的核心字段**（title/summary/content/event_date/source_url）禁止 Agent 修改
-
-## 测试
-
-| 包     | 框架   | 测试文件位置                     |
-| ------ | ------ | -------------------------------- |
-| server | Vitest | `packages/server/src/__tests__/` |
-| web    | Vitest | `packages/web/src/__tests__/`    |
-
-## 部署
+在提交前，请确保通过以下检查：
 
 ```bash
-docker-compose up -d
+npm run lint          # 代码检查
+npm run typecheck     # 类型检查
+npm run test          # 运行测试
+npm run build         # 验证构建
 ```
 
-前端通过 Nginx 提供服务，后端为 Fastify API 服务。所有数据在 `./data` 目录。
+## 认证与安全
 
-## CI/CD
+- **API Key**: 外部 Agent 调用 API 需在 Header 中携带 `X-API-Key`。
+- **不可篡改性**: 状态为 `confirmed` (已收录) 的事件，其核心字段 (标题/内容/日期/来源) 禁止 Agent 通过 API 修改。
 
-推送或创建 PR 时，GitHub Actions 自动运行：
+## 持续集成 (CI/CD)
 
-- 代码格式检查
-- ESLint
-- 类型检查（当前有已知问题，不阻断）
-- 测试
-- 构建（当前有已知问题，不阻断）
+项目使用 GitHub Actions 进行持续集成。每次推送或创建 PR 时都会运行代码格式、Lint、类型检查、测试和构建。
 
-详见 [AGENTS.md](../AGENTS.md)。
+## 文档归档 (Archive)
+
+本项目使用专门的工具进行需求设计与实施。以下是历史记录：
+
+- **标签管理优化**: [设计稿](./superpowers/specs/2026-05-07-enhanced-tag-management-design.md) | [实施计划](./superpowers/plans/2026-05-07-enhanced-tag-management.md)
+- **全局光标隐藏**: [设计稿](./superpowers/specs/2026-05-07-global-caret-hide-design.md) | [实施计划](./superpowers/plans/2026-05-07-targeted-caret-hide.md)
+- **页眉布局优化**: [设计稿](./superpowers/specs/2026-05-06-optimize-header-layout-design.md) | [基础设计](./superpowers/specs/2026-05-06-optimize-header-design.md)
+- **CI/CD 标准**: [设计稿](./superpowers/specs/2026-04-11-dev-standards-cicd-design.md)

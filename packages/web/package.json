@@ -8,8 +8,8 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "eslint 'src/**/*.{ts,vue}'",
-    "lint:fix": "eslint 'src/**/*.{ts,vue}' --fix",
+    "lint": "eslint src/**/*.{ts,vue}",
+    "lint:fix": "eslint src/**/*.{ts,vue} --fix",
     "typecheck": "vue-tsc -b --noEmit"
   },
   "dependencies": {

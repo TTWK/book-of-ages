@@ -11,7 +11,8 @@
         <n-select
           v-model:value="statusFilter"
           :options="statusOptions"
-          class="w-44"
+          class="w-48 flex-shrink-0"
+          :consistent-menu-width="false"
           @update:value="loadEvents"
         />
         <button

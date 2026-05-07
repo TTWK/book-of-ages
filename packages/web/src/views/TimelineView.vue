@@ -14,7 +14,8 @@
             { label: '按年编撰', value: 'year' },
             { label: '按月编撰', value: 'month' },
           ]"
-          class="w-44"
+          class="w-48 flex-shrink-0"
+          :consistent-menu-width="false"
           @update:value="loadTimeline"
         />
         <button

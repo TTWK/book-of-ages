@@ -161,10 +161,14 @@
             <span
               v-for="tag in tags"
               :key="tag.id"
-              class="px-2.5 py-1 bg-primary-50 text-primary-600 border border-primary-100 rounded-md text-xs font-medium flex items-center"
+              class="group/tag px-2.5 py-1 bg-primary-50 text-primary-600 border border-primary-100 rounded-md text-xs font-medium flex items-center transition-all"
             >
               <Hash class="w-3 h-3 mr-1 opacity-70" />
               {{ tag.name }}
+              <X
+                class="w-3 h-3 ml-1 cursor-pointer opacity-0 group-hover/tag:opacity-100 hover:text-error-500 transition-opacity"
+                @click.stop="handleRemoveTag(tag)"
+              />
             </span>
             <button
               @click="showTagModal = true"
@@ -380,19 +384,15 @@
       :title="isMobile ? undefined : '选择标签'"
       :fullscreen="isMobile"
     >
-      <div class="max-h-60 overflow-y-auto">
-        <n-checkbox-group v-model:value="selectedTagIds">
-          <div class="grid grid-cols-2 gap-2">
-            <n-checkbox
-              v-for="tag in allTags"
-              :key="tag.id"
-              :value="tag.id"
-              class="p-2 border border-neutral-100 rounded hover:bg-neutral-50"
-            >
-              <span class="text-sm">{{ tag.name }}</span>
-            </n-checkbox>
-          </div>
-        </n-checkbox-group>
+      <div class="py-4">
+        <n-select
+          v-model:value="selectedTagIds"
+          multiple
+          filterable
+          tag
+          placeholder="输入新标签或选择已有标签"
+          :options="allTags.map((t) => ({ label: t.name, value: t.id }))"
+        />
       </div>
       <template #footer>
         <div class="flex justify-end space-x-3">
@@ -573,6 +573,7 @@ import DOMPurify from 'dompurify';
 import type { Event, Tag, TimelineNode, Material, EventStatus } from '@book-of-ages/shared';
 import { LoadingSkeleton, StatusBadge } from '../components/ui';
 import { useIsMobile } from '../composables/useMediaQuery';
+import { useCommonUndoActions } from '../composables/useUndo';
 import {
   getEvent,
   updateEvent,
@@ -581,7 +582,7 @@ import {
   updateEventTags,
   exportEvent,
 } from '../api/eventApi';
-import { getTagList } from '../api/tagApi';
+import { getTagList, createTag } from '../api/tagApi';
 import {
   getTimelineNodes,
   createTimelineNode,
@@ -599,6 +600,7 @@ const message = useMessage();
 const route = useRoute();
 const router = useRouter();
 const isMobile = useIsMobile();
+const { removeTag: removeTagWithUndo } = useCommonUndoActions(message);
 
 const loading = ref(true);
 const event = ref<Event | null>(null);
@@ -787,15 +789,65 @@ async function handleSaveStatus() {
   }
 }
 
+const PRESET_COLORS = ['#71717a', '#14b8a6', '#eab308', '#f43f5e', '#22c55e', '#3b82f6'];
+const getRandomColor = () => PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
+
+async function processTags(tagValues: string[]): Promise<string[]> {
+  const finalTagIds: string[] = [];
+
+  for (const value of tagValues) {
+    // 检查是否是 UUID 格式
+    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
+    if (isId) {
+      finalTagIds.push(value);
+    } else {
+      // 创建新标签
+      try {
+        const newTag = await createTag({
+          name: value,
+          color: getRandomColor(),
+        });
+        allTags.value.push(newTag);
+        finalTagIds.push(newTag.id);
+      } catch (e) {
+        console.error('创建标签失败:', value);
+      }
+    }
+  }
+  return finalTagIds;
+}
+
 async function handleSaveTags() {
   try {
-    await updateEventTags(event.value!.id, selectedTagIds.value);
-    tags.value = allTags.value.filter((t) => selectedTagIds.value.includes(t.id));
+    const finalTagIds = await processTags(selectedTagIds.value);
+    await updateEventTags(event.value!.id, finalTagIds);
+    selectedTagIds.value = finalTagIds;
+    tags.value = allTags.value.filter((t) => finalTagIds.includes(t.id));
     showTagModal.value = false;
     message.success('标签已更新');
   } catch (error) {
     message.error('更新失败');
   }
+}
+
+async function handleRemoveTag(tag: Tag) {
+  const originalTagIds = selectedTagIds.value.slice();
+  const newTagIds = originalTagIds.filter((id) => id !== tag.id);
+
+  await removeTagWithUndo(
+    async () => {
+      await updateEventTags(event.value!.id, newTagIds);
+      selectedTagIds.value = newTagIds;
+      tags.value = tags.value.filter((t) => t.id !== tag.id);
+    },
+    async () => {
+      await updateEventTags(event.value!.id, originalTagIds);
+      selectedTagIds.value = originalTagIds;
+      tags.value = allTags.value.filter((t) => originalTagIds.includes(t.id));
+    },
+    tag.name
+  );
 }
 
 // Timeline

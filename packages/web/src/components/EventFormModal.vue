@@ -68,7 +68,7 @@
           filterable
           tag
           placeholder="输入关键词并按回车"
-          :options="[]"
+          :options="tagOptions"
         />
       </n-form-item>
     </n-form>
@@ -105,6 +105,7 @@ import { parseURL } from '../api/toolApi';
 const props = defineProps<{
   show: boolean;
   editingId: string | null;
+  tagOptions: { label: string; value: string }[];
   initialData: {
     title: string;
     summary: string;

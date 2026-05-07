@@ -158,5 +158,21 @@ export function useCommonUndoActions(message: {
         errorMessage: '状态修改失败',
       });
     },
+
+    /**
+     * 移除标签（带撤销）
+     */
+    removeTag: async (
+      removeFn: () => Promise<void>,
+      addBackFn: () => Promise<void>,
+      tagName: string
+    ) => {
+      return undo.executeWithUndo({
+        execute: removeFn,
+        undo: addBackFn,
+        successMessage: `已移除标签: ${tagName}`,
+        errorMessage: '移除标签失败',
+      });
+    },
   };
 }

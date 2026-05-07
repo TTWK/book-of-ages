@@ -77,6 +77,7 @@
       v-model:show="showEventModal"
       :editing-id="editingEventId"
       :initial-data="eventForm"
+      :tag-options="tagOptions"
       @save="handleSave"
     />
   </div>
@@ -88,7 +89,15 @@ import { useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
 import { Plus, Inbox as InboxIcon } from 'lucide-vue-next';
 import type { Event, EventStatus } from '@book-of-ages/shared';
-import { getEventList, createEvent, updateEvent, deleteEvent } from '../api/eventApi';
+import {
+  getEventList,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  getEventTags,
+  updateEventTags,
+} from '../api/eventApi';
+import { getTagList, createTag } from '../api/tagApi';
 import { EmptyState, LoadingSkeleton } from '../components/ui';
 import { useCommonUndoActions } from '../composables/useUndo';
 import EventCard from '../components/EventCard.vue';
@@ -105,6 +114,16 @@ const showEventModal = ref(false);
 const statusFilter = ref<EventStatus | 'all'>('confirmed');
 const currentPage = ref(1);
 const editingEventId = ref<string | null>(null);
+const tagOptions = ref<{ label: string; value: string }[]>([]);
+
+async function loadTags() {
+  try {
+    const data = await getTagList();
+    tagOptions.value = data.map((t) => ({ label: t.name, value: t.id }));
+  } catch (error) {
+    console.error('加载标签失败:', error);
+  }
+}
 
 const statusOptions = [
   { label: '全部记录', value: 'all' },
@@ -139,15 +158,23 @@ function openCreateModal() {
   showEventModal.value = true;
 }
 
-function openEditModal(event: Event) {
+async function openEditModal(event: Event) {
   editingEventId.value = event.id;
+  let currentTags: string[] = [];
+  try {
+    const tags = await getEventTags(event.id);
+    currentTags = tags.map((t) => t.id);
+  } catch (error) {
+    console.error('加载事件标签失败:', error);
+  }
+
   eventForm.value = {
     title: event.title,
     summary: event.summary || '',
     content: event.content || '',
     event_date: event.event_date ? new Date(event.event_date).getTime() : null,
     source_url: event.source_url || '',
-    tags: [],
+    tags: currentTags,
   };
   showEventModal.value = true;
 }
@@ -196,19 +223,53 @@ function onPageChange(page: number) {
   loadEvents();
 }
 
+const PRESET_COLORS = ['#71717a', '#14b8a6', '#eab308', '#f43f5e', '#22c55e', '#3b82f6'];
+const getRandomColor = () => PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
+
+async function processTagsInEventsView(tagValues: string[]): Promise<string[]> {
+  const finalTagIds: string[] = [];
+  for (const value of tagValues) {
+    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+    if (isId) {
+      finalTagIds.push(value);
+    } else {
+      try {
+        const newTag = await createTag({
+          name: value,
+          color: getRandomColor(),
+        });
+        finalTagIds.push(newTag.id);
+      } catch (e) {
+        console.error('创建标签失败:', value);
+      }
+    }
+  }
+  return finalTagIds;
+}
+
 async function handleSave(formData: any) {
   try {
+    const { tags: tagValues, ...rest } = formData;
     const payload: any = {
-      ...formData,
+      ...rest,
       event_date: formData.event_date ? new Date(formData.event_date).toISOString() : undefined,
     };
 
+    let eventId: string;
     if (editingEventId.value) {
-      await updateEvent(editingEventId.value, payload);
+      const updated = await updateEvent(editingEventId.value, payload);
+      eventId = updated!.id;
       message.success('修史成功');
     } else {
-      await createEvent({ ...payload, status: 'confirmed' });
+      const created = await createEvent({ ...payload, status: 'confirmed' });
+      eventId = created.id;
       message.success('已载入史册');
+    }
+
+    if (tagValues) {
+      const finalTagIds = await processTagsInEventsView(tagValues);
+      await updateEventTags(eventId, finalTagIds);
+      await loadTags();
     }
 
     showEventModal.value = false;
@@ -225,5 +286,6 @@ async function handleSave(formData: any) {
 
 onMounted(() => {
   loadEvents();
+  loadTags();
 });
 </script>

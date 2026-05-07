@@ -169,8 +169,6 @@ import {
   FileText,
   Search,
   Settings,
-  Sun,
-  Moon,
   CalendarDays,
   ScrollText,
   TrendingUp,

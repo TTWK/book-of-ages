@@ -21,7 +21,7 @@
           {{ event.title }}
         </h2>
         <div
-          class="flex items-center space-x-4 text-xs font-bold tracking-widest text-stone-400 uppercase"
+          class="flex items-center space-x-4 text-xs font-bold tracking-widest text-stone-400 uppercase no-caret"
         >
           <span v-if="event.event_date" class="flex items-center">
             <Calendar class="w-3.5 h-3.5 mr-1.5" />
@@ -49,7 +49,7 @@
       </div>
     </div>
 
-    <p v-if="event.summary" class="text-stone-600 leading-relaxed line-clamp-2 max-w-2xl">
+    <p v-if="event.summary" class="text-stone-600 leading-relaxed line-clamp-2 max-w-2xl no-caret">
       {{ event.summary }}
     </p>
   </div>

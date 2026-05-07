@@ -18,7 +18,7 @@
             <BookOpen class="w-5 h-5" />
           </div>
           <span
-            class="text-xl font-serif font-bold tracking-tight text-stone-900 dark:text-stone-100 whitespace-nowrap"
+            class="text-xl font-serif font-bold tracking-tight text-stone-900 dark:text-stone-100 whitespace-nowrap no-caret"
             >岁月史书</span
           >
         </div>
@@ -29,7 +29,7 @@
             v-for="item in navItems"
             :key="item.key"
             @click="handleMenuClick(item.key)"
-            class="px-4 py-2 rounded-sm flex items-center space-x-2 transition-all duration-200 group flex-shrink-0 whitespace-nowrap"
+            class="px-4 py-2 rounded-sm flex items-center space-x-2 transition-all duration-200 group flex-shrink-0 whitespace-nowrap no-caret"
             :class="
               currentRoute === item.key
                 ? 'bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100 font-semibold'
@@ -59,14 +59,14 @@
           <div class="h-6 w-px bg-stone-200 dark:bg-stone-800 mx-1"></div>
 
           <div class="flex items-center space-x-1">
-            <button
+            <!-- <button
               @click="appStore.toggleTheme()"
               class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100 transition-colors cursor-pointer"
               :title="appStore.isDark ? '浅色模式' : '深色模式'"
             >
               <Sun v-if="appStore.isDark" class="w-5 h-5" />
               <Moon v-else class="w-5 h-5" />
-            </button>
+            </button> -->
 
             <button
               @click="router.push({ name: 'analytics' })"
@@ -140,7 +140,7 @@
           v-for="item in navItems"
           :key="item.key"
           @click="handleMenuClick(item.key)"
-          class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-200 cursor-pointer"
+          class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-200 cursor-pointer no-caret"
           :class="
             currentRoute === item.key
               ? 'text-stone-900 dark:text-stone-100'

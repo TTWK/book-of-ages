@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-center justify-center py-12 px-4">
+  <div class="flex flex-col items-center justify-center py-12 px-4 no-caret">
     <!-- 图标 -->
     <div v-if="icon" class="mb-4 p-4 rounded-full" :class="iconBgClass || 'bg-neutral-100'">
       <component :is="icon" class="w-16 h-16" :class="iconColorClass || 'text-neutral-400'" />

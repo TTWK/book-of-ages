@@ -68,6 +68,14 @@
             </button>
 
             <button
+              @click="router.push({ name: 'analytics' })"
+              class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors cursor-pointer"
+              title="时间分析"
+            >
+              <TrendingUp class="w-5 h-5" />
+            </button>
+
+            <button
               @click="router.push({ name: 'audit' })"
               class="p-2 rounded-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors cursor-pointer"
               title="操作审计"
@@ -152,7 +160,6 @@ import {
   BookOpen,
   Inbox,
   FileText,
-  Tags,
   Search,
   Settings,
   Sun,
@@ -205,8 +212,6 @@ const navItems = [
   { label: '事件库', key: 'events', icon: FileText },
   { label: '收件箱', key: 'inbox', icon: Inbox },
   { label: '时间线', key: 'timeline', icon: CalendarDays },
-  { label: '时间分析', key: 'analytics', icon: TrendingUp },
-  { label: '标签', key: 'tags', icon: Tags },
 ];
 
 function handleMenuClick(key: string) {

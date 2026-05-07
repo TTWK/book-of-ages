@@ -11,9 +11,15 @@
         <n-select
           v-model:value="statusFilter"
           :options="statusOptions"
-          class="w-44"
+          class="w-36"
           @update:value="loadEvents"
         />
+        <button
+          @click="router.push({ name: 'tags' })"
+          class="flex items-center px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-sm font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap flex-shrink-0"
+        >
+          管理标签
+        </button>
         <button
           @click="openCreateModal"
           class="flex items-center px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-sm font-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"

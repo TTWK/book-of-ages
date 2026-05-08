@@ -11,13 +11,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "fastify": "^4.26.2",
+    "@book-of-ages/shared": "*",
     "@fastify/cors": "^8.5.0",
     "@fastify/multipart": "^8.2.0",
-    "sqlite3": "^5.1.7",
+    "@fastify/rate-limit": "^10.3.0",
     "dayjs": "^1.11.10",
-    "uuid": "^9.0.1",
-    "@book-of-ages/shared": "*"
+    "fastify": "^4.26.2",
+    "sqlite3": "^5.1.7",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",

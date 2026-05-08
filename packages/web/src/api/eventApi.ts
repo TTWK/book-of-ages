@@ -75,6 +75,19 @@ export async function updateEvent(id: string, input: UpdateEventInput): Promise<
 }
 
 /**
+ * 批量更新事件
+ */
+export async function batchUpdateEvents(
+  ids: string[],
+  updates: UpdateEventInput
+): Promise<{ successIds: string[]; failedIds: string[] }> {
+  return apiClient.put<{ successIds: string[]; failedIds: string[] }>('/api/events/batch', {
+    ids,
+    updates,
+  });
+}
+
+/**
  * 删除事件
  */
 export async function deleteEvent(id: string): Promise<void> {

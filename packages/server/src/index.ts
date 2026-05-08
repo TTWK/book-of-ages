@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
 import { initDatabase, closeDatabase } from './db';
 import { authPlugin, optionalAuthMiddleware } from './middleware/auth';
 import { eventRoutes } from './routes/events';
@@ -16,6 +17,10 @@ const fastify = Fastify({ logger: true });
 // 注册插件
 fastify.register(authPlugin);
 fastify.register(cors);
+fastify.register(rateLimit, {
+  max: 100,
+  timeWindow: '1 minute',
+});
 fastify.register(multipart, {
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB

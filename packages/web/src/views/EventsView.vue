@@ -31,6 +31,46 @@
       </div>
     </div>
 
+    <!-- Batch Action Bar -->
+    <Transition name="fade">
+      <div
+        v-if="selectedIds.length > 0"
+        class="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center space-x-6 border border-stone-800"
+      >
+        <div class="flex items-center space-x-2 border-r border-stone-700 pr-6 mr-2">
+          <span class="text-stone-400 font-bold text-xs uppercase tracking-widest">已选中</span>
+          <span class="bg-cta-500 text-white px-2 py-0.5 rounded-full text-xs font-black">{{
+            selectedIds.length
+          }}</span>
+        </div>
+
+        <div class="flex items-center space-x-4">
+          <button
+            @click="handleBatchArchive"
+            :disabled="batchProcessing"
+            class="flex items-center hover:text-stone-300 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
+          >
+            <Archive class="w-4 h-4 mr-2" />
+            批量归档
+          </button>
+          <button
+            @click="handleBatchDelete"
+            :disabled="batchProcessing"
+            class="flex items-center hover:text-red-400 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
+          >
+            <Trash2 class="w-4 h-4 mr-2" />
+            批量删除
+          </button>
+          <button
+            @click="selectedIds = []"
+            class="p-1 hover:bg-stone-800 rounded-full transition-colors cursor-pointer"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Events List -->
     <LoadingSkeleton v-if="loading" type="cards" :count="3" />
 
@@ -48,9 +88,12 @@
         v-for="event in events"
         :key="event.id"
         :event="event"
+        :selectable="true"
+        :selected="selectedIds.includes(event.id)"
         @click="router.push(`/events/${event.id}`)"
         @edit="openEditModal"
         @delete="handleDelete"
+        @select="(val: boolean) => toggleSelect(event.id, val)"
       />
 
       <!-- Pagination -->
@@ -87,7 +130,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
-import { Plus, Inbox as InboxIcon } from 'lucide-vue-next';
+import { Plus, Inbox as InboxIcon, Archive, Trash2, X } from 'lucide-vue-next';
 import type { Event, EventStatus } from '@book-of-ages/shared';
 import {
   getEventList,
@@ -96,6 +139,7 @@ import {
   deleteEvent,
   getEventTags,
   updateEventTags,
+  batchUpdateEvents,
 } from '../api/eventApi';
 import { getTagList, createTag } from '../api/tagApi';
 import { EmptyState, LoadingSkeleton } from '../components/ui';
@@ -115,6 +159,51 @@ const statusFilter = ref<EventStatus | 'all'>('confirmed');
 const currentPage = ref(1);
 const editingEventId = ref<string | null>(null);
 const tagOptions = ref<{ label: string; value: string }[]>([]);
+
+// 批量操作
+const selectedIds = ref<string[]>([]);
+const batchProcessing = ref(false);
+
+function toggleSelect(id: string, selected: boolean) {
+  if (selected) {
+    if (!selectedIds.value.includes(id)) {
+      selectedIds.value.push(id);
+    }
+  } else {
+    selectedIds.value = selectedIds.value.filter((i) => i !== id);
+  }
+}
+
+async function handleBatchArchive() {
+  if (selectedIds.value.length === 0) return;
+  batchProcessing.value = true;
+  try {
+    const result = await batchUpdateEvents(selectedIds.value, { status: 'archived' });
+    message.success(`成功归档 ${result.successIds.length} 条事件`);
+    events.value = events.value.filter((e) => !result.successIds.includes(e.id));
+    selectedIds.value = [];
+  } catch (error) {
+    message.error('批量归档失败');
+  } finally {
+    batchProcessing.value = false;
+  }
+}
+
+async function handleBatchDelete() {
+  if (selectedIds.value.length === 0) return;
+  if (!confirm(`确定要删除选中的 ${selectedIds.value.length} 条事件吗？`)) return;
+  batchProcessing.value = true;
+  try {
+    const result = await batchUpdateEvents(selectedIds.value, { status: 'deleted' });
+    message.success(`成功删除 ${result.successIds.length} 条事件`);
+    events.value = events.value.filter((e) => !result.successIds.includes(e.id));
+    selectedIds.value = [];
+  } catch (error) {
+    message.error('批量删除失败');
+  } finally {
+    batchProcessing.value = false;
+  }
+}
 
 async function loadTags() {
   try {
@@ -289,3 +378,18 @@ onMounted(() => {
   loadTags();
 });
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 20px);
+}
+</style>

@@ -14,14 +14,23 @@
         <p class="text-stone-500 font-medium">审阅 Agent 采集的片段，编撰入册</p>
       </div>
 
-      <button
-        @click="loadEvents"
-        :disabled="loading"
-        class="flex items-center px-4 py-2 bg-white border border-stone-200 hover:border-stone-900 text-stone-900 rounded-sm font-semibold transition-all duration-200 cursor-pointer disabled:opacity-50 whitespace-nowrap flex-shrink-0"
-      >
-        <RefreshCw class="w-4 h-4 mr-2" :class="{ 'animate-spin': loading }" />
-        刷新状态
-      </button>
+      <div class="flex items-center space-x-3">
+        <button
+          v-if="events.length > 0"
+          @click="toggleSelectAll"
+          class="flex items-center px-4 py-2 bg-white border border-stone-200 hover:border-stone-900 text-stone-900 rounded-sm font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap"
+        >
+          {{ selectedIds.length === events.length ? '取消全选' : '全选本页' }}
+        </button>
+        <button
+          @click="loadEvents"
+          :disabled="loading"
+          class="flex items-center px-4 py-2 bg-white border border-stone-200 hover:border-stone-900 text-stone-900 rounded-sm font-semibold transition-all duration-200 cursor-pointer disabled:opacity-50 whitespace-nowrap flex-shrink-0"
+        >
+          <RefreshCw class="w-4 h-4 mr-2" :class="{ 'animate-spin': loading }" />
+          刷新状态
+        </button>
+      </div>
     </div>
 
     <!-- Inbox List -->
@@ -40,9 +49,18 @@
       <div
         v-for="event in events"
         :key="event.id"
-        class="card-scrapbook p-5 group flex flex-col md:flex-row md:items-center justify-between gap-6"
+        class="card-scrapbook p-5 group flex flex-col md:flex-row md:items-center justify-between gap-6 relative"
+        :class="{ 'border- stone-900 ring-1 ring-stone-900': selectedIds.includes(event.id) }"
       >
-        <div class="flex-1 min-w-0 cursor-pointer" @click="openPreview(event)">
+        <!-- Checkbox Overlay -->
+        <div class="absolute left-2 top-2 z-10">
+          <n-checkbox
+            :checked="selectedIds.includes(event.id)"
+            @update:checked="(val: boolean) => toggleSelect(event.id, val)"
+          />
+        </div>
+
+        <div class="flex-1 min-w-0 cursor-pointer pl-6" @click="openPreview(event)">
           <div class="flex items-start mb-2">
             <div
               class="w-2 h-2 mt-2 mr-4 rounded-full bg-cta-500 flex-shrink-0 animate-pulse"
@@ -101,6 +119,46 @@
         </div>
       </div>
     </div>
+
+    <!-- Batch Action Bar -->
+    <Transition name="fade">
+      <div
+        v-if="selectedIds.length > 0"
+        class="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center space-x-6 border border-stone-800"
+      >
+        <div class="flex items-center space-x-2 border-r border-stone-700 pr-6 mr-2">
+          <span class="text-stone-400 font-bold text-xs uppercase tracking-widest">已选中</span>
+          <span class="bg-cta-500 text-white px-2 py-0.5 rounded-full text-xs font-black">{{
+            selectedIds.length
+          }}</span>
+        </div>
+
+        <div class="flex items-center space-x-4">
+          <button
+            @click="handleBatchConfirm"
+            :disabled="batchProcessing"
+            class="flex items-center hover:text-cta-400 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
+          >
+            <Check class="w-4 h-4 mr-2" />
+            批量收录
+          </button>
+          <button
+            @click="handleBatchArchive"
+            :disabled="batchProcessing"
+            class="flex items-center hover:text-stone-300 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
+          >
+            <Archive class="w-4 h-4 mr-2" />
+            批量归档
+          </button>
+          <button
+            @click="selectedIds = []"
+            class="p-1 hover:bg-stone-800 rounded-full transition-colors cursor-pointer"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Preview Modal -->
     <n-modal v-model:show="showPreview" preset="card" class="max-w-2xl" title="预览待处理事件">
@@ -180,9 +238,10 @@ import {
   Archive,
   Check,
   ExternalLink,
+  X,
 } from 'lucide-vue-next';
 import type { Event } from '@book-of-ages/shared';
-import { getEventList, updateEvent } from '../api/eventApi';
+import { getEventList, updateEvent, batchUpdateEvents } from '../api/eventApi';
 import { EmptyState, LoadingSkeleton, StatusBadge } from '../components/ui';
 import { useCommonUndoActions } from '../composables/useUndo';
 import { usePullToRefresh } from '../composables/usePullToRefresh';
@@ -197,6 +256,58 @@ const events = ref<Event[]>([]);
 const loading = ref(false);
 const showPreview = ref(false);
 const selectedEvent = ref<Event | null>(null);
+
+// 批量操作
+const selectedIds = ref<string[]>([]);
+const batchProcessing = ref(false);
+
+function toggleSelect(id: string, selected: boolean) {
+  if (selected) {
+    if (!selectedIds.value.includes(id)) {
+      selectedIds.value.push(id);
+    }
+  } else {
+    selectedIds.value = selectedIds.value.filter((i) => i !== id);
+  }
+}
+
+function toggleSelectAll() {
+  if (selectedIds.value.length === events.value.length) {
+    selectedIds.value = [];
+  } else {
+    selectedIds.value = events.value.map((e) => e.id);
+  }
+}
+
+async function handleBatchConfirm() {
+  if (selectedIds.value.length === 0) return;
+  batchProcessing.value = true;
+  try {
+    const result = await batchUpdateEvents(selectedIds.value, { status: 'confirmed' });
+    message.success(`成功收录 ${result.successIds.length} 条事件`);
+    events.value = events.value.filter((e) => !result.successIds.includes(e.id));
+    selectedIds.value = [];
+  } catch (error) {
+    message.error('批量收录失败');
+  } finally {
+    batchProcessing.value = false;
+  }
+}
+
+async function handleBatchArchive() {
+  if (selectedIds.value.length === 0) return;
+  batchProcessing.value = true;
+  try {
+    const result = await batchUpdateEvents(selectedIds.value, { status: 'archived' });
+    message.success(`成功归档 ${result.successIds.length} 条事件`);
+    events.value = events.value.filter((e) => !result.successIds.includes(e.id));
+    selectedIds.value = [];
+  } catch (error) {
+    message.error('批量归档失败');
+  } finally {
+    batchProcessing.value = false;
+  }
+}
 
 // 下拉刷新
 const {
@@ -274,5 +385,18 @@ onMounted(() => {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(13, 148, 136, 0.4);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 20px);
 }
 </style>

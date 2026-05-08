@@ -238,3 +238,30 @@ export async function batchCreateEvents(inputs: CreateEventInput[]): Promise<Eve
 
   return events;
 }
+
+/**
+ * 批量更新事件
+ */
+export async function batchUpdateEvents(
+  ids: string[],
+  input: UpdateEventInput,
+  apiKeyId?: string
+): Promise<{ successIds: string[]; failedIds: string[] }> {
+  const successIds: string[] = [];
+  const failedIds: string[] = [];
+
+  for (const id of ids) {
+    try {
+      const updated = await updateEvent(id, input, apiKeyId);
+      if (updated) {
+        successIds.push(id);
+      } else {
+        failedIds.push(id);
+      }
+    } catch (_error) {
+      failedIds.push(id);
+    }
+  }
+
+  return { successIds, failedIds };
+}

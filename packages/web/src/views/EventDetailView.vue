@@ -294,21 +294,30 @@
             >
               <!-- Cover Preview -->
               <div
-                class="h-20 w-full bg-neutral-100 flex items-center justify-center relative cursor-pointer"
-                @click="previewMaterial(material)"
+                class="h-20 w-full bg-neutral-100 flex items-center justify-center relative"
+                @click="material.type !== 'image' && previewMaterial(material)"
               >
-                <img
+                <n-image
                   v-if="material.type === 'image'"
                   :src="getMaterialPreviewUrl(material.id)"
                   class="w-full h-full object-cover"
+                  show-toolbar-tooltip
+                  :img-props="{ class: 'w-full h-full object-cover' }"
                 />
-                <FileText v-else-if="material.type === 'pdf'" class="w-8 h-8 text-error-400" />
-                <Image v-else-if="material.type === 'snapshot'" class="w-8 h-8 text-primary-600" />
-                <File class="w-8 h-8 text-neutral-400" v-else />
+                <FileText
+                  v-else-if="material.type === 'pdf'"
+                  class="w-8 h-8 text-error-400 cursor-pointer"
+                />
+                <Image
+                  v-else-if="material.type === 'snapshot'"
+                  class="w-8 h-8 text-primary-600 cursor-pointer"
+                />
+                <File class="w-8 h-8 text-neutral-400 cursor-pointer" v-else />
 
-                <!-- Hover Overlay -->
+                <!-- Hover Overlay for non-images -->
                 <div
-                  class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  v-if="material.type !== 'image'"
+                  class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
                 >
                   <ExternalLink class="w-5 h-5 text-white" />
                 </div>

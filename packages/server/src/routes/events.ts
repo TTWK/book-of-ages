@@ -13,6 +13,7 @@ import {
   getEventById,
   updateEvent,
   deleteEvent,
+  batchUpdateEvents,
 } from '../services/eventService';
 import { getEventTags, updateEventTags } from '../services/tagService';
 import { logOperation, logUIOperation } from '../services/operationLogService';
@@ -506,6 +507,48 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
       const event = await createEvent(input);
       await logOperation('CREATE', 'Event', event.id, request.apiKeyId);
       reply.code(201).send({ success: true, data: event });
+    }
+  );
+
+  // 批量更新事件
+  fastify.put(
+    '/api/events/batch',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['ids', 'updates'],
+          properties: {
+            ids: { type: 'array', items: { type: 'string' } },
+            updates: {
+              type: 'object',
+              properties: {
+                status: { type: 'string', enum: ['draft', 'confirmed', 'archived', 'deleted'] },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (
+      request: FastifyRequest<{
+        Body: { ids: string[]; updates: UpdateEventInput };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const { ids, updates } = request.body;
+      const result = await batchUpdateEvents(ids, updates, request.apiKeyId);
+
+      // 记录批量操作日志
+      for (const id of result.successIds) {
+        if (request.apiKeyId) {
+          await logOperation('UPDATE', 'Event', id, request.apiKeyId);
+        } else {
+          await logUIOperation('UPDATE', 'Event', id);
+        }
+      }
+
+      reply.send({ success: true, data: result });
     }
   );
 

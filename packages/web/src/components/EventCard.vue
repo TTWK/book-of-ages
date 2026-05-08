@@ -2,7 +2,13 @@
   <div
     @click="$emit('click', event.id)"
     class="card-scrapbook group p-6 relative overflow-hidden cursor-pointer"
+    :class="{ 'ring-1 ring-stone-900 shadow-lg': selected }"
   >
+    <!-- Checkbox for batch selection -->
+    <div v-if="selectable" class="absolute left-2 top-2 z-10" @click.stop>
+      <n-checkbox :checked="selected" @update:checked="$emit('select', $event)" />
+    </div>
+
     <!-- Status Indicator Dot -->
     <div
       class="absolute left-0 top-0 bottom-0 w-1"
@@ -62,12 +68,15 @@ import StatusBadge from './StatusBadge.vue';
 
 defineProps<{
   event: Event;
+  selectable?: boolean;
+  selected?: boolean;
 }>();
 
 defineEmits<{
   (e: 'click', id: string): void;
   (e: 'edit', event: Event): void;
   (e: 'delete', event: Event): void;
+  (e: 'select', selected: boolean): void;
 }>();
 
 function formatDate(dateStr: string) {

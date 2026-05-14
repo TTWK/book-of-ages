@@ -1,20 +1,17 @@
 # 多阶段构建
 
 # 阶段 1: 构建
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# 安装 pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# 复制 package.json 和 pnpm-lock.yaml (如果存在)
-COPY package.json pnpm-lock.yaml* ./
+# 复制 package.json
+COPY package.json ./
 COPY packages/server/package.json ./packages/server/
 COPY packages/shared/package.json ./packages/shared/
 
 # 安装依赖
-RUN pnpm install --frozen-lockfile || npm install
+RUN npm install
 
 # 复制源代码
 COPY packages/shared/ ./packages/shared/
@@ -29,7 +26,7 @@ WORKDIR /app/packages/server
 RUN npm run build
 
 # 阶段 2: 生产环境
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -43,8 +40,8 @@ COPY --from=builder /app/packages/server/package.json ./packages/server/
 COPY --from=builder /app/packages/shared/package.json ./packages/shared/
 COPY --from=builder /app/package*.json ./
 
-# 安装生产依赖
-RUN npm install --omit=dev
+# 复制 node_modules（避免版本不兼容问题）
+COPY --from=builder /app/node_modules ./node_modules
 
 # 创建数据目录
 RUN mkdir -p /app/data
@@ -59,7 +56,7 @@ ENV DATA_DIR=/app/data
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/health || exit 1
 
 # 启动服务
-CMD ["npm", "run", "start:server"]
+CMD ["npm", "run", "start", "-w", "@book-of-ages/server"]

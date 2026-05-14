@@ -48,5 +48,4 @@ AGENTS.md
 Dockerfile
 Dockerfile.web
 docker-compose.yml
-nginx.conf
 .dockerignore

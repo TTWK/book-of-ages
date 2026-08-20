@@ -172,6 +172,7 @@ import {
   CalendarDays,
   ScrollText,
   TrendingUp,
+  UploadCloud,
 } from 'lucide-vue-next';
 import { useAppStore } from '../stores/app';
 import { useCommonShortcuts } from '../composables/useKeyboardShortcuts';
@@ -217,6 +218,7 @@ const navItems = [
   { label: '事件库', key: 'events', icon: FileText },
   { label: '收件箱', key: 'inbox', icon: Inbox },
   { label: '时间线', key: 'timeline', icon: CalendarDays },
+  { label: '史料导入', key: 'imports', icon: UploadCloud },
 ];
 
 function handleMenuClick(key: string) {

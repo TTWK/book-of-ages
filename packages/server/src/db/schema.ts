@@ -1,6 +1,6 @@
 /**
  * 数据库 Schema 定义
- * 基于 docs/data-model.md 中的设计规范
+ * 基于 docs/data-model.md 中的设计规范与 2026-08-20 证据档案馆架构规范
  */
 
 export const schema = `
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS event_timeline_nodes (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. materials（参考材料表）
+-- 3. materials（参考材料与快照证据表）
 CREATE TABLE IF NOT EXISTS materials (
     id TEXT PRIMARY KEY,
     event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
@@ -43,6 +43,9 @@ CREATE TABLE IF NOT EXISTS materials (
     type TEXT NOT NULL CHECK(type IN ('image', 'video', 'pdf', 'snapshot', 'other')),
     title TEXT,
     file_path TEXT NOT NULL,
+    snapshot_html_path TEXT,
+    file_hash TEXT,
+    file_size INTEGER,
     source_url TEXT,
     content_text TEXT,
     deleted_at DATETIME,
@@ -67,9 +70,35 @@ CREATE TABLE IF NOT EXISTS event_tags (
     PRIMARY KEY (event_id, tag_id)
 );
 
+-- 6. import_tasks（批量导入任务表）
+CREATE TABLE IF NOT EXISTS import_tasks (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL CHECK(type IN ('bookmarks', 'urls', 'markdown_zip')),
+    total_count INTEGER DEFAULT 0,
+    processed_count INTEGER DEFAULT 0,
+    success_count INTEGER DEFAULT 0,
+    failed_count INTEGER DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'completed', 'failed')),
+    error_log TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 7. import_task_items（导入任务明细表）
+CREATE TABLE IF NOT EXISTS import_task_items (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL REFERENCES import_tasks(id) ON DELETE CASCADE,
+    source_url TEXT NOT NULL,
+    title TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'success', 'failed')),
+    event_id TEXT REFERENCES events(id) ON DELETE SET NULL,
+    error_message TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ==================== 系统表 ====================
 
--- 6. api_keys（API 密钥表）
+-- 8. api_keys（API 密钥表）
 CREATE TABLE IF NOT EXISTS api_keys (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -79,7 +108,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. operation_logs（简易审计日志）
+-- 9. operation_logs（简易审计日志）
 CREATE TABLE IF NOT EXISTS operation_logs (
     id TEXT PRIMARY KEY,
     api_key_id TEXT REFERENCES api_keys(id) ON DELETE SET NULL,
@@ -178,6 +207,9 @@ CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
 CREATE INDEX IF NOT EXISTS idx_timeline_event_id ON event_timeline_nodes(event_id);
 CREATE INDEX IF NOT EXISTS idx_materials_event_id ON materials(event_id);
 CREATE INDEX IF NOT EXISTS idx_materials_timeline_node_id ON materials(timeline_node_id);
+CREATE INDEX IF NOT EXISTS idx_materials_file_hash ON materials(file_hash);
+CREATE INDEX IF NOT EXISTS idx_import_tasks_status ON import_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_import_task_items_task_id ON import_task_items(task_id);
 CREATE INDEX IF NOT EXISTS idx_tags_parent_id ON tags(parent_id);
 CREATE INDEX IF NOT EXISTS idx_event_tags_event_id ON event_tags(event_id);
 CREATE INDEX IF NOT EXISTS idx_event_tags_tag_id ON event_tags(tag_id);

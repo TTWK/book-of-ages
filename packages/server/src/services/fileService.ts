@@ -1,9 +1,10 @@
 /**
- * 文件上传服务
+ * 文件上传与 CAS 内容寻址存储服务
  */
 
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import type { MaterialType } from '@book-of-ages/shared';
 
@@ -26,6 +27,55 @@ function ensureUploadDir(): void {
       fs.mkdirSync(dir, { recursive: true });
     }
   }
+}
+
+/**
+ * 计算数据的 SHA-256 哈希
+ */
+export function calculateSha256(content: Buffer | string): string {
+  const hash = crypto.createHash('sha256');
+  if (typeof content === 'string') {
+    hash.update(content, 'utf8');
+  } else {
+    hash.update(content);
+  }
+  return hash.digest('hex');
+}
+
+/**
+ * 使用内容寻址 (CAS) 保存文件（去重与防篡改）
+ */
+export function saveCasFile(
+  content: Buffer | string,
+  type: MaterialType = 'snapshot',
+  ext: string = '.html'
+): { relativePath: string; fullPath: string; hash: string; size: number } {
+  ensureUploadDir();
+
+  const buffer = typeof content === 'string' ? Buffer.from(content, 'utf8') : content;
+  const hash = calculateSha256(buffer);
+  const cleanExt = ext.startsWith('.') ? ext : `.${ext}`;
+  const filename = `${hash}${cleanExt}`;
+  const dirPath = path.join(UPLOAD_DIR, type);
+
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+
+  const fullPath = path.join(dirPath, filename);
+  const relativePath = `uploads/${type}/${filename}`;
+
+  // 如果文件不存在则写入
+  if (!fs.existsSync(fullPath)) {
+    fs.writeFileSync(fullPath, buffer);
+  }
+
+  return {
+    relativePath,
+    fullPath,
+    hash,
+    size: buffer.length,
+  };
 }
 
 /**

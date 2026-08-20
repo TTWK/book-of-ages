@@ -54,6 +54,12 @@ const routes = [
     meta: { title: '操作日志' },
   },
   {
+    path: '/imports',
+    name: 'imports',
+    component: () => import('../views/ImportView.vue'),
+    meta: { title: '史料导入' },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('../views/SettingsView.vue'),

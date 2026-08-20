@@ -13,6 +13,7 @@ import { tagRoutes } from './routes/tags';
 import { toolRoutes } from './routes/tools';
 import { searchRoutes } from './routes/search';
 import { settingsRoutes } from './routes/settings';
+import { importRoutes } from './routes/imports';
 
 const fastify = Fastify({ logger: true });
 
@@ -53,6 +54,7 @@ fastify.register(tagRoutes);
 fastify.register(toolRoutes);
 fastify.register(searchRoutes);
 fastify.register(settingsRoutes);
+fastify.register(importRoutes);
 
 const start = async () => {
   const port = parseInt(process.env.PORT || '3000', 10);

@@ -75,6 +75,11 @@ export function initDatabase(): Promise<Database> {
           return;
         }
 
+        // 增量字段迁移兼容
+        db!.run('ALTER TABLE materials ADD COLUMN snapshot_html_path TEXT', () => {});
+        db!.run('ALTER TABLE materials ADD COLUMN file_hash TEXT', () => {});
+        db!.run('ALTER TABLE materials ADD COLUMN file_size INTEGER', () => {});
+
         resolve(db!);
       });
     });

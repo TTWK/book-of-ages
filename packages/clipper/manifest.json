@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "岁月史书剪藏助手",
+  "version": "1.0.0",
+  "description": "抗 404 证据冻结与一键剪藏助手，将你见证的历史与证据永久封存在私有岁月史书中。",
+  "permissions": ["activeTab", "storage", "contextMenus", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "剪藏到岁月史书"
+  },
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.ts"]
+    }
+  ]
+}

@@ -44,6 +44,14 @@ export async function getTagById(id: string): Promise<Tag | null> {
 }
 
 /**
+ * 根据名称获取标签
+ */
+export async function getTagByName(name: string): Promise<Tag | null> {
+  const result = await get<Tag>(`SELECT * FROM tags WHERE name = ?`, [name]);
+  return result || null;
+}
+
+/**
  * 更新标签
  */
 export async function updateTag(id: string, input: UpdateTagInput): Promise<Tag | null> {

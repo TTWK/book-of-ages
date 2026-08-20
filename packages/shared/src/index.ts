@@ -61,7 +61,7 @@ export interface UpdateTimelineNodeInput {
   sort_order?: number;
 }
 
-// ==================== 参考材料 (Materials) ====================
+// ==================== 参考材料与证据快照 (Materials & Snapshots) ====================
 
 export type MaterialType = 'image' | 'video' | 'pdf' | 'snapshot' | 'other';
 
@@ -72,6 +72,9 @@ export interface Material {
   type: MaterialType;
   title?: string;
   file_path: string;
+  snapshot_html_path?: string;
+  file_hash?: string;
+  file_size?: number;
   source_url?: string;
   content_text?: string;
   deleted_at?: string;
@@ -84,8 +87,30 @@ export interface CreateMaterialInput {
   timeline_node_id?: string;
   type: MaterialType;
   title?: string;
+  file_path?: string;
+  snapshot_html_path?: string;
+  file_hash?: string;
+  file_size?: number;
   source_url?: string;
   content_text?: string;
+}
+
+export interface SnapshotAsset {
+  originalUrl: string;
+  localPath: string;
+  hash: string;
+  size: number;
+}
+
+export interface SnapshotResult {
+  title: string;
+  excerpt?: string;
+  byline?: string;
+  siteName?: string;
+  url: string;
+  htmlSnapshotPath: string;
+  markdownContent: string;
+  savedAssets: SnapshotAsset[];
 }
 
 // ==================== 标签 (Tags) ====================
@@ -133,7 +158,13 @@ export interface APIKeyWithPlain extends APIKey {
 // ==================== 操作日志 (Operation Logs) ====================
 
 export type OperationAction = 'CREATE' | 'UPDATE' | 'DELETE';
-export type OperationEntityType = 'Event' | 'Material' | 'TimelineNode' | 'Tag' | 'APIKey';
+export type OperationEntityType =
+  | 'Event'
+  | 'Material'
+  | 'TimelineNode'
+  | 'Tag'
+  | 'APIKey'
+  | 'ImportTask';
 
 export interface OperationLog {
   id: string;
@@ -142,6 +173,53 @@ export interface OperationLog {
   entity_type: OperationEntityType;
   entity_id: string;
   created_at: string;
+}
+
+// ==================== 批量导入任务 (Batch Import Tasks) ====================
+
+export type ImportType = 'bookmarks' | 'urls' | 'markdown_zip';
+export type ImportTaskStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type ImportItemStatus = 'pending' | 'processing' | 'success' | 'failed';
+
+export interface ImportTask {
+  id: string;
+  type: ImportType;
+  total_count: number;
+  processed_count: number;
+  success_count: number;
+  failed_count: number;
+  status: ImportTaskStatus;
+  error_log?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ImportTaskItem {
+  id: string;
+  task_id: string;
+  source_url: string;
+  title?: string;
+  status: ImportItemStatus;
+  event_id?: string;
+  error_message?: string;
+  created_at: string;
+}
+
+export interface CreateImportTaskInput {
+  type: ImportType;
+  content: string; // HTML string or URL list string
+}
+
+// ==================== 剪藏插件载荷 (Web Clipper Payload) ====================
+
+export interface WebClipperPayload {
+  url: string;
+  title: string;
+  selectedText?: string;
+  fullHtml?: string;
+  tags?: string[];
+  notes?: string;
+  autoConfirm?: boolean;
 }
 
 // ==================== 通用 API 响应 ====================

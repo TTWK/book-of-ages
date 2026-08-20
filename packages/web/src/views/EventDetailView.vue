@@ -549,6 +549,12 @@
         </div>
       </template>
     </n-modal>
+
+    <SnapshotModal
+      v-model:show="showSnapshotModal"
+      :title="currentSnapshotTitle"
+      :snapshot-path="currentSnapshotPath"
+    />
   </div>
 </template>
 
@@ -581,8 +587,13 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import type { Event, Tag, TimelineNode, Material, EventStatus } from '@book-of-ages/shared';
 import { LoadingSkeleton, StatusBadge } from '../components/ui';
+import SnapshotModal from '../components/SnapshotModal.vue';
 import { useIsMobile } from '../composables/useMediaQuery';
 import { useCommonUndoActions } from '../composables/useUndo';
+
+const showSnapshotModal = ref(false);
+const currentSnapshotTitle = ref('');
+const currentSnapshotPath = ref('');
 import {
   getEvent,
   updateEvent,
@@ -966,10 +977,18 @@ async function handleUploadMaterial() {
 }
 
 function previewMaterial(material: Material) {
+  if (material.type === 'snapshot' || material.snapshot_html_path) {
+    currentSnapshotTitle.value = material.title || '网页证据快照';
+    currentSnapshotPath.value = material.snapshot_html_path || material.file_path;
+    showSnapshotModal.value = true;
+    return;
+  }
   if (material.type === 'image' || material.type === 'pdf') {
     window.open(getMaterialPreviewUrl(material.id), '_blank');
   } else if (material.source_url) {
     window.open(material.source_url, '_blank');
+  } else {
+    window.open(getMaterialPreviewUrl(material.id), '_blank');
   }
 }
 

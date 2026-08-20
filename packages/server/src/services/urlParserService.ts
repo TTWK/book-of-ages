@@ -25,11 +25,12 @@ export async function parseURL(input: ParseURLInput): Promise<ParsedURLResult> {
   // 来实际抓取和解析网页内容
 
   try {
-    // 尝试使用 fetch 获取网页内容（需要处理 CORS 和反爬虫）
+    // 尝试使用 fetch 获取网页内容（设置 3 秒超时）
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; BookOfAges/1.0)',
       },
+      signal: AbortSignal.timeout(3000),
     });
 
     if (!response.ok) {

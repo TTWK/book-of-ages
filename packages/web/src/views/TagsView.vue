@@ -98,9 +98,22 @@ import type { Tag } from '@book-of-ages/shared';
 import { getTagList, createTag, updateTag, deleteTag } from '../api/tagApi';
 import { EmptyState } from '../components/ui';
 
+interface TagWithCount extends Tag {
+  eventCount?: number;
+}
+
+interface TagTreeNode extends TreeOption {
+  id: string;
+  name: string;
+  color?: string;
+  eventCount?: number;
+  rawTag: Tag;
+  children?: TagTreeNode[];
+}
+
 const message = useMessage();
 
-const tags = ref<Tag[]>([]);
+const tags = ref<TagWithCount[]>([]);
 const showModal = ref(false);
 const saving = ref(false);
 const editingTag = ref<Tag | null>(null);
@@ -111,18 +124,19 @@ const formData = ref({
   color: undefined as string | undefined,
 });
 
-const treeData = computed(() => {
-  const tagMap = new Map<string, TreeOption & { children?: TreeOption[]; eventCount?: number }>();
-  const roots: TreeOption[] = [];
+const treeData = computed<TagTreeNode[]>(() => {
+  const tagMap = new Map<string, TagTreeNode>();
+  const roots: TagTreeNode[] = [];
 
   tags.value.forEach((tag) => {
     tagMap.set(tag.id, {
       id: tag.id,
       name: tag.name,
       color: tag.color,
-      eventCount: (tag as any).eventCount || 0,
+      eventCount: tag.eventCount || 0,
       key: tag.id,
       label: tag.name,
+      rawTag: tag,
       children: [],
     });
   });
@@ -149,7 +163,7 @@ const parentTagOptions = computed(() => {
 });
 
 function renderPrefix(option: TreeOption) {
-  const tag = option as any;
+  const tag = option as unknown as TagTreeNode;
   const color = tag.color;
 
   return h('div', { class: 'flex items-center mr-2' }, [
@@ -170,7 +184,8 @@ function renderPrefix(option: TreeOption) {
 }
 
 function renderSuffix(option: TreeOption) {
-  const tag = option as any;
+  const node = option as unknown as TagTreeNode;
+  const tag = node.rawTag;
 
   return h(
     'div',

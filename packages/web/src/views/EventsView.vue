@@ -46,6 +46,14 @@
 
         <div class="flex items-center space-x-4">
           <button
+            @click="handleBatchExport"
+            :disabled="batchProcessing"
+            class="flex items-center hover:text-stone-300 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
+          >
+            <Download class="w-4 h-4 mr-2" />
+            批量导出
+          </button>
+          <button
             @click="handleBatchArchive"
             :disabled="batchProcessing"
             class="flex items-center hover:text-stone-300 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
@@ -130,8 +138,8 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
-import { Plus, Inbox as InboxIcon, Archive, Trash2, X } from 'lucide-vue-next';
-import type { Event, EventStatus } from '@book-of-ages/shared';
+import { Plus, Inbox as InboxIcon, Archive, Trash2, Download, X } from 'lucide-vue-next';
+import type { Event, EventStatus, CreateEventInput } from '@book-of-ages/shared';
 import {
   getEventList,
   createEvent,
@@ -140,6 +148,7 @@ import {
   getEventTags,
   updateEventTags,
   batchUpdateEvents,
+  batchExportEvents,
 } from '../api/eventApi';
 import { getTagList, createTag } from '../api/tagApi';
 import { EmptyState, LoadingSkeleton } from '../components/ui';
@@ -174,6 +183,35 @@ function toggleSelect(id: string, selected: boolean) {
   }
 }
 
+async function handleBatchExport() {
+  if (selectedIds.value.length === 0) return;
+  batchProcessing.value = true;
+  try {
+    const result = await batchExportEvents(selectedIds.value);
+    if (!result.items || result.items.length === 0) {
+      message.warning('没有可导出的事件内容');
+      return;
+    }
+    const combinedMarkdown = result.items.map((item) => item.content).join('\n\n---\n\n');
+    const blob = new Blob([combinedMarkdown], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `岁月史书-批量导出-${new Date().toISOString().slice(0, 10)}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    message.success(`成功导出 ${result.items.length} 篇事件叙事`);
+    selectedIds.value = [];
+  } catch (_error) {
+    message.error('批量导出失败');
+  } finally {
+    batchProcessing.value = false;
+  }
+}
+
 async function handleBatchArchive() {
   if (selectedIds.value.length === 0) return;
   batchProcessing.value = true;
@@ -182,7 +220,7 @@ async function handleBatchArchive() {
     message.success(`成功归档 ${result.successIds.length} 条事件`);
     events.value = events.value.filter((e) => !result.successIds.includes(e.id));
     selectedIds.value = [];
-  } catch (error) {
+  } catch (_error) {
     message.error('批量归档失败');
   } finally {
     batchProcessing.value = false;
@@ -198,7 +236,7 @@ async function handleBatchDelete() {
     message.success(`成功删除 ${result.successIds.length} 条事件`);
     events.value = events.value.filter((e) => !result.successIds.includes(e.id));
     selectedIds.value = [];
-  } catch (error) {
+  } catch (_error) {
     message.error('批量删除失败');
   } finally {
     batchProcessing.value = false;
@@ -315,6 +353,15 @@ function onPageChange(page: number) {
 const PRESET_COLORS = ['#71717a', '#14b8a6', '#eab308', '#f43f5e', '#22c55e', '#3b82f6'];
 const getRandomColor = () => PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
 
+interface EventFormData {
+  title: string;
+  summary?: string;
+  content?: string;
+  event_date?: number | null;
+  source_url?: string;
+  tags?: string[];
+}
+
 async function processTagsInEventsView(tagValues: string[]): Promise<string[]> {
   const finalTagIds: string[] = [];
   for (const value of tagValues) {
@@ -328,19 +375,22 @@ async function processTagsInEventsView(tagValues: string[]): Promise<string[]> {
           color: getRandomColor(),
         });
         finalTagIds.push(newTag.id);
-      } catch (e) {
-        console.error('创建标签失败:', value);
+      } catch (_e) {
+        // 创建标签失败忽略
       }
     }
   }
   return finalTagIds;
 }
 
-async function handleSave(formData: any) {
+async function handleSave(formData: EventFormData) {
   try {
     const { tags: tagValues, ...rest } = formData;
-    const payload: any = {
-      ...rest,
+    const payload: CreateEventInput = {
+      title: rest.title,
+      summary: rest.summary,
+      content: rest.content,
+      source_url: rest.source_url,
       event_date: formData.event_date ? new Date(formData.event_date).toISOString() : undefined,
     };
 
@@ -363,8 +413,9 @@ async function handleSave(formData: any) {
 
     showEventModal.value = false;
     await loadEvents();
-  } catch (error: any) {
-    if (error.response?.status === 403) {
+  } catch (error: unknown) {
+    const err = error as { response?: { status?: number } };
+    if (err.response?.status === 403) {
       message.error('无法修改：已成定论的历史不容篡改');
     } else {
       message.error(editingEventId.value ? '修订失败' : '载入失败');

@@ -118,7 +118,17 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:show', value: boolean): void;
-  (e: 'save', data: any): void;
+  (
+    e: 'save',
+    data: {
+      title: string;
+      summary: string;
+      content: string;
+      event_date: number | null;
+      source_url: string;
+      tags: string[];
+    }
+  ): void;
 }>();
 
 const message = useMessage();
@@ -168,8 +178,8 @@ async function handleSave() {
   await formRef.value?.validate();
   saving.value = true;
   try {
-    await emit('save', form.value);
-  } catch (error) {
+    emit('save', form.value);
+  } catch (_error) {
     // Error handled by parent
   } finally {
     saving.value = false;

@@ -4,7 +4,14 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { get, all, run } from '../db';
-import type { Event, CreateEventInput, UpdateEventInput, EventStatus } from '@book-of-ages/shared';
+import { getEventTags } from './tagService';
+import type {
+  Event,
+  Tag,
+  CreateEventInput,
+  UpdateEventInput,
+  EventStatus,
+} from '@book-of-ages/shared';
 
 /**
  * 创建事件
@@ -86,6 +93,32 @@ export async function listEvents(options?: {
     [...params, pageSize, offset]
   );
 
+  if (events.length > 0) {
+    const eventIds = events.map((e) => e.id);
+    const placeholders = eventIds.map(() => '?').join(',');
+    const tagRows = await all<Tag & { event_id: string }>(
+      `
+      SELECT et.event_id, t.id, t.name, t.parent_id, t.color, t.created_at, t.updated_at
+      FROM tags t
+      INNER JOIN event_tags et ON t.id = et.tag_id
+      WHERE et.event_id IN (${placeholders})
+      ORDER BY t.parent_id, t.name
+    `,
+      eventIds
+    );
+    const tagsByEvent = new Map<string, Tag[]>();
+    for (const row of tagRows) {
+      const { event_id, ...tag } = row;
+      if (!tagsByEvent.has(event_id)) {
+        tagsByEvent.set(event_id, []);
+      }
+      tagsByEvent.get(event_id)!.push(tag as Tag);
+    }
+    for (const event of events) {
+      event.tags = tagsByEvent.get(event.id) || [];
+    }
+  }
+
   return { events, total };
 }
 
@@ -99,7 +132,12 @@ export async function getEventById(id: string): Promise<Event | null> {
   `,
     [id]
   );
-  return result || null;
+  if (!result) {
+    return null;
+  }
+  const tags = await getEventTags(id);
+  result.tags = tags;
+  return result;
 }
 
 /**

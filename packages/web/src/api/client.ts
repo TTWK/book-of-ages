@@ -2,7 +2,7 @@
  * API 客户端封装
  */
 
-import axios, { type AxiosInstance, type AxiosError } from 'axios';
+import axios, { type AxiosInstance, type AxiosError, type AxiosRequestConfig } from 'axios';
 import type { ApiResponse } from '@book-of-ages/shared';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -34,7 +34,6 @@ class ApiClient {
     // 请求拦截器
     this.client.interceptors.request.use(
       (config) => {
-        console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
       (error) => {
@@ -46,7 +45,6 @@ class ApiClient {
     // 响应拦截器
     this.client.interceptors.response.use(
       (response) => {
-        console.log(`[API] ${response.status} ${response.config.url}`);
         return response;
       },
       (error: AxiosError<ApiResponse<unknown>>) => {
@@ -87,7 +85,7 @@ class ApiClient {
   /**
    * GET 请求
    */
-  async get<T>(url: string, params?: any): Promise<T> {
+  async get<T>(url: string, params?: object): Promise<T> {
     try {
       const response = await this.client.get<ApiResponse<T>>(url, { params });
       if (!response.data.success) {
@@ -173,7 +171,11 @@ class ApiClient {
   /**
    * GET 请求（返回完整响应）
    */
-  async getFullResponse<T>(url: string, params?: any, config?: any): Promise<ApiResponse<T>> {
+  async getFullResponse<T>(
+    url: string,
+    params?: object,
+    config?: AxiosRequestConfig
+  ): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.get<ApiResponse<T>>(url, { params, ...config });
       return response.data;

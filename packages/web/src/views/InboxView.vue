@@ -287,7 +287,7 @@ async function handleBatchConfirm() {
     message.success(`成功收录 ${result.successIds.length} 条事件`);
     events.value = events.value.filter((e) => !result.successIds.includes(e.id));
     selectedIds.value = [];
-  } catch (error) {
+  } catch (_error) {
     message.error('批量收录失败');
   } finally {
     batchProcessing.value = false;
@@ -302,7 +302,7 @@ async function handleBatchArchive() {
     message.success(`成功归档 ${result.successIds.length} 条事件`);
     events.value = events.value.filter((e) => !result.successIds.includes(e.id));
     selectedIds.value = [];
-  } catch (error) {
+  } catch (_error) {
     message.error('批量归档失败');
   } finally {
     batchProcessing.value = false;
@@ -323,9 +323,8 @@ async function loadEvents() {
   try {
     const result = await getEventList({ status: 'draft', page: 1, pageSize: 50 });
     events.value = result.items;
-  } catch (error) {
+  } catch (_error) {
     message.error('加载事件列表失败');
-    console.error(error);
   } finally {
     loading.value = false;
   }
@@ -343,9 +342,8 @@ async function handleConfirm(event: Event | null) {
     message.success('已收录事件');
     showPreview.value = false;
     events.value = events.value.filter((e) => e.id !== event.id);
-  } catch (error) {
+  } catch (_error) {
     message.error('收录失败');
-    console.error(error);
   }
 }
 

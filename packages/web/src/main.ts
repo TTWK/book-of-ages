@@ -9,7 +9,7 @@ import './style.css';
 // 导致最小化后立即弹回。Vue Router 4.6+ 在 visibilitychange 中保存滚动位置时会
 // 调用 replaceState，此处在页面不可见时跳过该调用以规避 Edge 的 bug。
 const originalReplaceState = history.replaceState.bind(history);
-history.replaceState = function (state: any, title: string, url?: string | URL | null) {
+history.replaceState = function (state: unknown, title: string, url?: string | URL | null) {
   if (document.visibilityState === 'hidden') return;
   originalReplaceState(state, title, url);
 };

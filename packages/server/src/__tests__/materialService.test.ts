@@ -377,12 +377,12 @@ describe('materialService', () => {
       await deleteMaterial(material.id);
 
       const result = await import('../db');
-      const dbMaterial = await result.get<any>('SELECT * FROM materials WHERE id = ?', [
+      const dbMaterial = await result.get<Material>('SELECT * FROM materials WHERE id = ?', [
         material.id,
       ]);
 
       expect(dbMaterial).toBeDefined();
-      expect(dbMaterial.deleted_at).not.toBeNull();
+      expect(dbMaterial?.deleted_at).not.toBeNull();
     });
 
     it('should return false for non-existent material', async () => {

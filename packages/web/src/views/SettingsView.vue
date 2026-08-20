@@ -218,7 +218,7 @@ const keyForm = ref({ name: '' });
 async function loadAPIKeys() {
   try {
     apiKeys.value = await getAPIKeys();
-  } catch (error) {
+  } catch (_error) {
     message.error('加载 API Key 失败');
   }
 }
@@ -239,7 +239,7 @@ async function handleCreateKey() {
     const result = await createAPIKey(keyForm.value.name);
     createdKey.value = result;
     loadAPIKeys();
-  } catch (error) {
+  } catch (_error) {
     message.error('生成失败');
   } finally {
     creating.value = false;
@@ -251,7 +251,7 @@ async function handleDeleteKey(id: string) {
     await deleteAPIKey(id);
     message.success('已吊销');
     loadAPIKeys();
-  } catch (error) {
+  } catch (_error) {
     message.error('吊销失败');
   }
 }

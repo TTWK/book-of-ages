@@ -5,6 +5,10 @@ import rateLimit from '@fastify/rate-limit';
 import { initDatabase, closeDatabase } from './db';
 import { authPlugin, optionalAuthMiddleware } from './middleware/auth';
 import { eventRoutes } from './routes/events';
+import { timelineRoutes } from './routes/timeline';
+import { materialRoutes } from './routes/materials';
+import { exportRoutes } from './routes/export';
+import { analyticsRoutes } from './routes/analytics';
 import { tagRoutes } from './routes/tags';
 import { toolRoutes } from './routes/tools';
 import { searchRoutes } from './routes/search';
@@ -40,7 +44,11 @@ fastify.get('/health', async () => {
 });
 
 // 注册路由
-fastify.register(eventRoutes); // 包含 /api/events 和 /api/events/:id/* 子路由
+fastify.register(eventRoutes);
+fastify.register(timelineRoutes);
+fastify.register(materialRoutes);
+fastify.register(exportRoutes);
+fastify.register(analyticsRoutes);
 fastify.register(tagRoutes);
 fastify.register(toolRoutes);
 fastify.register(searchRoutes);
@@ -52,7 +60,7 @@ const start = async () => {
   try {
     await initDatabase();
     await fastify.listen({ port, host: '0.0.0.0' });
-    console.log(`Server running at http://localhost:${port}`);
+    console.info(`Server running at http://localhost:${port}`);
   } catch (err) {
     fastify.log.error(err);
     closeDatabase();
@@ -62,7 +70,7 @@ const start = async () => {
 
 // 优雅关闭
 process.on('SIGINT', () => {
-  console.log('Shutting down server...');
+  console.info('Shutting down server...');
   fastify.close(() => {
     closeDatabase();
     process.exit(0);
@@ -70,7 +78,7 @@ process.on('SIGINT', () => {
 });
 
 process.on('SIGTERM', () => {
-  console.log('Shutting down server...');
+  console.info('Shutting down server...');
   fastify.close(() => {
     closeDatabase();
     process.exit(0);

@@ -9,6 +9,7 @@ import type {
   UpdateEventInput,
   EventStatus,
   Tag,
+  BatchExportResult,
 } from '@book-of-ages/shared';
 
 export interface EventListParams {
@@ -119,4 +120,11 @@ export async function exportEvent(id: string): Promise<string> {
     responseType: 'text',
   });
   return response.data;
+}
+
+/**
+ * 批量导出事件
+ */
+export async function batchExportEvents(ids: string[]): Promise<BatchExportResult> {
+  return apiClient.post<BatchExportResult>('/api/events/batch-export', { ids });
 }

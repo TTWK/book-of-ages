@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { simpleSearch } from '../services/searchService';
-import { createEvent, deleteEvent } from '../services/eventService';
-import { createMaterial, deleteMaterial } from '../services/materialService';
+import { createEvent } from '../services/eventService';
 import { initDatabase, closeDatabase, run } from '../db';
 
 describe('searchService', () => {

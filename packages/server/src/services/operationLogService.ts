@@ -3,7 +3,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { get, all, run } from '../db';
+import { all, run } from '../db';
 import type { OperationLog, OperationAction, OperationEntityType } from '@book-of-ages/shared';
 
 /**

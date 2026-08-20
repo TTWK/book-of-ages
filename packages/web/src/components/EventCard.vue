@@ -58,6 +58,23 @@
     <p v-if="event.summary" class="text-stone-600 leading-relaxed line-clamp-2 max-w-2xl no-caret">
       {{ event.summary }}
     </p>
+
+    <div v-if="event.tags && event.tags.length > 0" class="flex flex-wrap gap-1.5 mt-3">
+      <span
+        v-for="tag in event.tags"
+        :key="tag.id"
+        class="px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase rounded-sm flex items-center gap-1"
+        :style="tag.color ? { backgroundColor: `${tag.color}15`, color: tag.color } : undefined"
+        :class="{ 'bg-stone-100 text-stone-500': !tag.color }"
+      >
+        <span
+          v-if="tag.color"
+          class="w-1.5 h-1.5 rounded-full"
+          :style="{ backgroundColor: tag.color }"
+        ></span>
+        {{ tag.name }}
+      </span>
+    </div>
   </div>
 </template>
 

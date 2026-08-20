@@ -290,9 +290,10 @@ describe('eventService', () => {
       try {
         await updateEvent(event.id, { event_date: '2026-04-12' }, 'api-key-id');
         throw new Error('Should have thrown');
-      } catch (error: any) {
-        expect(error.message).toContain('PERMISSION_DENIED');
-        expect(error.message).toContain('已收录事件的核心字段不允许通过 API 修改');
+      } catch (error: unknown) {
+        const err = error as Error;
+        expect(err.message).toContain('PERMISSION_DENIED');
+        expect(err.message).toContain('已收录事件的核心字段不允许通过 API 修改');
       }
     });
   });
@@ -314,11 +315,11 @@ describe('eventService', () => {
 
       // 直接查询数据库验证
       const result = await import('../db');
-      const dbEvent = await result.get<any>('SELECT * FROM events WHERE id = ?', [event.id]);
+      const dbEvent = await result.get<Event>('SELECT * FROM events WHERE id = ?', [event.id]);
 
       expect(dbEvent).toBeDefined();
-      expect(dbEvent.deleted_at).not.toBeNull();
-      expect(dbEvent.status).toBe('deleted');
+      expect(dbEvent?.deleted_at).not.toBeNull();
+      expect(dbEvent?.status).toBe('deleted');
     });
 
     it('should return false for non-existent event', async () => {

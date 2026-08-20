@@ -10,6 +10,7 @@ export interface Event {
   status: EventStatus;
   event_date?: string;
   source_url?: string;
+  tags?: Tag[];
   deleted_at?: string;
   created_at: string;
   updated_at: string;
@@ -190,4 +191,38 @@ export interface ParsedURLResult {
 
 export interface ParseURLInput {
   url: string;
+}
+
+// ==================== 导出与分析 (Export & Analytics) ====================
+
+export interface BatchExportInput {
+  ids: string[];
+}
+
+export interface ExportedEventItem {
+  id: string;
+  title: string;
+  content: string;
+}
+
+export interface BatchExportResult {
+  items: ExportedEventItem[];
+}
+
+export interface TimeAggregationResult {
+  period: string;
+  count: number;
+}
+
+export interface TagAggregationEvent {
+  id: string;
+  title: string;
+  summary?: string;
+  event_date?: string;
+  created_at: string;
+}
+
+export interface TagAggregationResult {
+  tag: Tag;
+  events: TagAggregationEvent[];
 }

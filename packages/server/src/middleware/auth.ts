@@ -18,7 +18,7 @@ declare module 'fastify' {
  */
 export async function optionalAuthMiddleware(
   request: FastifyRequest,
-  reply: FastifyReply
+  _reply: FastifyReply
 ): Promise<void> {
   const apiKey = request.headers['x-api-key'] as string | undefined;
 

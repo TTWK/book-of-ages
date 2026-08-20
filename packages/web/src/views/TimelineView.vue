@@ -91,15 +91,23 @@
                   {{ event.summary }}
                 </p>
 
-                <div
-                  v-if="(event as any).tags && (event as any).tags.length > 0"
-                  class="flex flex-wrap gap-2 mt-4"
-                >
+                <div v-if="event.tags && event.tags.length > 0" class="flex flex-wrap gap-2 mt-4">
                   <span
-                    v-for="tag in (event as any).tags"
+                    v-for="tag in event.tags"
                     :key="tag.id"
-                    class="px-2 py-0.5 bg-stone-100 text-stone-500 text-[10px] font-bold tracking-widest uppercase rounded-sm"
+                    class="px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase rounded-sm flex items-center gap-1"
+                    :style="
+                      tag.color
+                        ? { backgroundColor: `${tag.color}15`, color: tag.color }
+                        : undefined
+                    "
+                    :class="{ 'bg-stone-100 text-stone-500': !tag.color }"
                   >
+                    <span
+                      v-if="tag.color"
+                      class="w-1.5 h-1.5 rounded-full"
+                      :style="{ backgroundColor: tag.color }"
+                    ></span>
                     {{ tag.name }}
                   </span>
                 </div>

@@ -10,6 +10,7 @@ import {
   updateTag,
   deleteTag,
   getTagEventCount,
+  getTagEventDetails,
 } from '../services/tagService';
 import { logOperation } from '../services/operationLogService';
 import type { CreateTagInput, UpdateTagInput } from '@book-of-ages/shared';
@@ -163,6 +164,38 @@ export async function tagRoutes(fastify: FastifyInstance): Promise<void> {
         success: true,
         data: updatedTag,
       });
+    }
+  );
+
+  // 获取标签下的事件聚合详情
+  fastify.get(
+    '/api/tags/:id/events',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        const details = await getTagEventDetails(request.params.id);
+        reply.send({
+          success: true,
+          data: details,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === '标签不存在') {
+          reply.code(404).send({
+            success: false,
+            error: {
+              code: 'NOT_FOUND',
+              message: '标签不存在',
+            },
+          });
+        } else {
+          reply.code(500).send({
+            success: false,
+            error: {
+              code: 'FETCH_FAILED',
+              message: '获取标签事件详情失败',
+            },
+          });
+        }
+      }
     }
   );
 

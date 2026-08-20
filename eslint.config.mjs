@@ -21,9 +21,12 @@ export default [
       '@typescript-eslint': tsPlugin,
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
       '@typescript-eslint/no-explicit-any': 'warn',
-      'no-console': 'warn',
+      'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
     },
   },
   // 前端 Vue 配置
@@ -44,9 +47,12 @@ export default [
     rules: {
       'vue/multi-word-component-names': 'off',
       'vue/no-unused-vars': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
       '@typescript-eslint/no-explicit-any': 'warn',
-      'no-console': 'warn',
+      'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
     },
   },
   // 前端 TypeScript 配置（非 Vue 文件）
@@ -63,9 +69,12 @@ export default [
       '@typescript-eslint': tsPlugin,
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
       '@typescript-eslint/no-explicit-any': 'warn',
-      'no-console': 'warn',
+      'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
     },
   },
 ];

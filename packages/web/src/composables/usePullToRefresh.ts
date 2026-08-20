@@ -79,17 +79,20 @@ export function usePullToRefresh(
     }
   }
 
+  const touchStartListener = (e: Event) => handleTouchStart(e as TouchEvent);
+  const touchMoveListener = (e: Event) => handleTouchMove(e as TouchEvent);
+
   onMounted(() => {
     const el = container.value || window;
-    el.addEventListener('touchstart', handleTouchStart as any, { passive: true });
-    el.addEventListener('touchmove', handleTouchMove as any, { passive: false });
+    el.addEventListener('touchstart', touchStartListener, { passive: true });
+    el.addEventListener('touchmove', touchMoveListener, { passive: false });
     el.addEventListener('touchend', handleTouchEnd);
   });
 
   onUnmounted(() => {
     const el = container.value || window;
-    el.removeEventListener('touchstart', handleTouchStart as any);
-    el.removeEventListener('touchmove', handleTouchMove as any);
+    el.removeEventListener('touchstart', touchStartListener);
+    el.removeEventListener('touchmove', touchMoveListener);
     el.removeEventListener('touchend', handleTouchEnd);
   });
 

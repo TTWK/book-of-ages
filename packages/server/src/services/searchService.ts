@@ -48,7 +48,7 @@ export async function simpleSearch(
         WHERE e.deleted_at IS NULL
           AND events_fts MATCH ?
       `;
-      const params: any[] = [ftsQuery];
+      const params: (string | number)[] = [ftsQuery];
 
       // 日期范围过滤
       if (options?.startDate) {
@@ -64,7 +64,7 @@ export async function simpleSearch(
       params.push(limit);
 
       results.events = await all<Event>(query, params);
-    } catch (error) {
+    } catch (_error) {
       // FTS5 查询失败时，回退到 LIKE 查询
       const searchPattern = `%${keyword}%`;
       let query = `
@@ -72,7 +72,7 @@ export async function simpleSearch(
         WHERE deleted_at IS NULL
           AND (title LIKE ? OR summary LIKE ? OR content LIKE ?)
       `;
-      const params: any[] = [searchPattern, searchPattern, searchPattern];
+      const params: (string | number)[] = [searchPattern, searchPattern, searchPattern];
 
       if (options?.startDate) {
         query += ' AND event_date >= ?';
@@ -99,13 +99,13 @@ export async function simpleSearch(
         WHERE m.deleted_at IS NULL
           AND materials_fts MATCH ?
       `;
-      const params: any[] = [ftsQuery];
+      const params: (string | number)[] = [ftsQuery];
 
       query += ' LIMIT ?';
       params.push(limit);
 
       results.materials = await all<Material>(query, params);
-    } catch (error) {
+    } catch (_error) {
       // FTS5 查询失败时，回退到 LIKE 查询
       const searchPattern = `%${keyword}%`;
       results.materials = await all<Material>(
@@ -128,13 +128,13 @@ export async function simpleSearch(
         INNER JOIN timeline_fts fts ON t.rowid = fts.rowid
         WHERE timeline_fts MATCH ?
       `;
-      const params: any[] = [ftsQuery];
+      const params: (string | number)[] = [ftsQuery];
 
       query += ' LIMIT ?';
       params.push(limit);
 
       results.timelineNodes = await all<TimelineNode>(query, params);
-    } catch (error) {
+    } catch (_error) {
       // FTS5 查询失败时，回退到 LIKE 查询
       const searchPattern = `%${keyword}%`;
       results.timelineNodes = await all<TimelineNode>(

@@ -61,7 +61,7 @@ export function initDatabase(): Promise<Database> {
         return;
       }
 
-      console.log(`Database initialized at: ${DB_PATH}`);
+      console.info(`Database initialized at: ${DB_PATH}`);
 
       // 启用外键约束和 WAL 模式（提高并发性能）
       db!.run('PRAGMA foreign_keys = ON');
@@ -94,7 +94,7 @@ export function closeDatabase(): Promise<void> {
           return;
         }
         db = null;
-        console.log('Database connection closed');
+        console.info('Database connection closed');
 
         // 在测试环境中删除临时数据库文件
         if (process.env.NODE_ENV === 'test' && fs.existsSync(dbPath)) {
@@ -125,14 +125,14 @@ export function run(
 ): Promise<{ changes: number; lastInsertRowid: number }> {
   return new Promise((resolve, reject) => {
     const database = getDatabase();
-    database.run(sql, params, function (err) {
+    database.run(sql, params, function (this: sqlite3.RunResult, err: Error | null) {
       if (err) {
         reject(err);
         return;
       }
       resolve({
         changes: this.changes,
-        lastInsertRowid: 0, // sqlite3 不支持 lastInsertRowid
+        lastInsertRowid: this.lastID ?? 0,
       });
     });
   });
@@ -144,7 +144,7 @@ export function run(
 export function get<T>(sql: string, params: unknown[] = []): Promise<T | undefined> {
   return new Promise((resolve, reject) => {
     const database = getDatabase();
-    database.get<T>(sql, params, (err, row) => {
+    database.get<T>(sql, params, (err: Error | null, row: T) => {
       if (err) {
         reject(err);
         return;
@@ -160,7 +160,7 @@ export function get<T>(sql: string, params: unknown[] = []): Promise<T | undefin
 export function all<T>(sql: string, params: unknown[] = []): Promise<T[]> {
   return new Promise((resolve, reject) => {
     const database = getDatabase();
-    database.all<T>(sql, params, (err, rows) => {
+    database.all<T>(sql, params, (err: Error | null, rows: T[]) => {
       if (err) {
         reject(err);
         return;
@@ -182,19 +182,18 @@ export async function transaction(
     const database = getDatabase();
 
     // 开始事务
-    database.run('BEGIN TRANSACTION', (err) => {
+    database.run('BEGIN TRANSACTION', (err: Error | null) => {
       if (err) {
         reject(err);
         return;
       }
 
       const results: Array<{ changes: number }> = [];
-      let completed = 0;
 
       const executeNext = (index: number) => {
         if (index >= queries.length) {
           // 所有查询完成，提交事务
-          database.run('COMMIT', (commitErr) => {
+          database.run('COMMIT', (commitErr: Error | null) => {
             if (commitErr) {
               // 提交失败，回滚
               database.run('ROLLBACK', () => {
@@ -208,7 +207,7 @@ export async function transaction(
         }
 
         const { sql, params = [] } = queries[index];
-        database.run(sql, params, function (runErr) {
+        database.run(sql, params, function (this: sqlite3.RunResult, runErr: Error | null) {
           if (runErr) {
             // 查询失败，回滚
             database.run('ROLLBACK', () => {

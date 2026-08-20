@@ -725,7 +725,7 @@ async function loadEvent() {
     timelineNodes.value = timelineData.sort((a, b) => a.sort_order - b.sort_order);
     materials.value = materialData;
     allTags.value = allTagsData;
-  } catch (error) {
+  } catch (_error) {
     message.error('加载详情失败');
   } finally {
     loading.value = false;
@@ -766,7 +766,7 @@ async function handleSave() {
     event.value = updated;
     isEditing.value = false;
     message.success('保存成功');
-  } catch (error) {
+  } catch (_error) {
     message.error('保存失败');
   } finally {
     saving.value = false;
@@ -779,7 +779,7 @@ async function handleDelete() {
     await deleteEvent(event.value!.id);
     message.success('已删除');
     router.replace('/events');
-  } catch (error) {
+  } catch (_error) {
     message.error('删除失败');
   }
 }
@@ -791,7 +791,7 @@ async function handleSaveStatus() {
     event.value!.status = newStatus.value;
     showStatusModal.value = false;
     message.success('状态已更新');
-  } catch (error) {
+  } catch (_error) {
     message.error('更新失败');
   } finally {
     savingStatus.value = false;
@@ -819,8 +819,8 @@ async function processTags(tagValues: string[]): Promise<string[]> {
         });
         allTags.value.push(newTag);
         finalTagIds.push(newTag.id);
-      } catch (e) {
-        console.error('创建标签失败:', value);
+      } catch (_e) {
+        // 创建标签失败忽略
       }
     }
   }
@@ -835,7 +835,7 @@ async function handleSaveTags() {
     tags.value = allTags.value.filter((t) => finalTagIds.includes(t.id));
     showTagModal.value = false;
     message.success('标签已更新');
-  } catch (error) {
+  } catch (_error) {
     message.error('更新失败');
   }
 }
@@ -906,7 +906,7 @@ async function handleSaveTimeline() {
     );
     showAddTimeline.value = false;
     message.success('时间线已更新');
-  } catch (error) {
+  } catch (_error) {
     message.error('更新失败');
   } finally {
     savingTimeline.value = false;
@@ -919,7 +919,7 @@ async function deleteTimelineNodeItem(node: TimelineNode) {
     await deleteTimelineNode(node.id);
     timelineNodes.value = timelineNodes.value.filter((n) => n.id !== node.id);
     message.success('已删除');
-  } catch (error) {
+  } catch (_error) {
     message.error('删除失败');
   }
 }
@@ -958,7 +958,7 @@ async function handleUploadMaterial() {
     };
     materials.value = await getMaterials(event.value!.id);
     message.success('材料已上传');
-  } catch (error) {
+  } catch (_error) {
     message.error('上传失败');
   } finally {
     uploadingMaterial.value = false;
@@ -979,7 +979,7 @@ async function deleteMaterialItem(id: string) {
     await deleteMaterial(id);
     materials.value = materials.value.filter((m) => m.id !== id);
     message.success('已删除');
-  } catch (error) {
+  } catch (_error) {
     message.error('删除失败');
   }
 }

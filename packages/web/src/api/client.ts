@@ -19,6 +19,21 @@ export class ApiError extends Error {
   }
 }
 
+function formatError(error: unknown): ApiError {
+  if (error instanceof ApiError) return error;
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as ApiResponse<unknown> | undefined;
+    const message = data?.error?.message || error.message || '请求失败';
+    const code = data?.error?.code || error.code || 'HTTP_ERROR';
+    const status = error.response?.status || 0;
+    return new ApiError(message, code, status);
+  }
+  if (error instanceof Error) {
+    return new ApiError(error.message, 'UNKNOWN', 0);
+  }
+  return new ApiError('未知错误', 'UNKNOWN', 0);
+}
+
 class ApiClient {
   private client: AxiosInstance;
 
@@ -97,8 +112,7 @@ class ApiClient {
       }
       return response.data.data as T;
     } catch (error) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError('未知错误', 'UNKNOWN', 0);
+      throw formatError(error);
     }
   }
 
@@ -120,8 +134,7 @@ class ApiClient {
       }
       return response.data.data as T;
     } catch (error) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError('未知错误', 'UNKNOWN', 0);
+      throw formatError(error);
     }
   }
 
@@ -143,8 +156,7 @@ class ApiClient {
       }
       return response.data.data as T;
     } catch (error) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError('未知错误', 'UNKNOWN', 0);
+      throw formatError(error);
     }
   }
 
@@ -163,8 +175,7 @@ class ApiClient {
       }
       return response.data.data as T;
     } catch (error) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError('未知错误', 'UNKNOWN', 0);
+      throw formatError(error);
     }
   }
 
@@ -180,8 +191,7 @@ class ApiClient {
       const response = await this.client.get<ApiResponse<T>>(url, { params, ...config });
       return response.data;
     } catch (error) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError('未知错误', 'UNKNOWN', 0);
+      throw formatError(error);
     }
   }
 }

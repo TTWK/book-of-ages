@@ -405,22 +405,29 @@ async function handleSave(formData: EventFormData) {
       message.success('已载入史册');
     }
 
-    if (tagValues) {
-      const finalTagIds = await processTagsInEventsView(tagValues);
-      await updateEventTags(eventId, finalTagIds);
-      await loadTags();
+    if (editingEventId.value) {
+      if (tagValues) {
+        const finalTagIds = await processTagsInEventsView(tagValues);
+        await updateEventTags(eventId, finalTagIds);
+        await loadTags();
+      }
+    } else {
+      if (tagValues && tagValues.length > 0) {
+        const finalTagIds = await processTagsInEventsView(tagValues);
+        await updateEventTags(eventId, finalTagIds);
+        await loadTags();
+      }
     }
 
     showEventModal.value = false;
     await loadEvents();
   } catch (error: unknown) {
-    const err = error as { response?: { status?: number } };
-    if (err.response?.status === 403) {
+    const err = error as { status?: number; response?: { status?: number }; message?: string };
+    if (err.status === 403 || err.response?.status === 403) {
       message.error('无法修改：已成定论的历史不容篡改');
     } else {
-      message.error(editingEventId.value ? '修订失败' : '载入失败');
+      message.error(err.message || (editingEventId.value ? '修订失败' : '载入失败'));
     }
-    throw error;
   }
 }
 

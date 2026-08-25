@@ -21,7 +21,11 @@ const fastify = Fastify({ logger: true });
 
 // 注册插件
 fastify.register(authPlugin);
-fastify.register(cors);
+fastify.register(cors, {
+  origin: true,
+  methods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+});
 fastify.register(rateLimit, {
   max: 100,
   timeWindow: '1 minute',

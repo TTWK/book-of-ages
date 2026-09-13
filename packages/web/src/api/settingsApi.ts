@@ -3,7 +3,7 @@
  */
 
 import apiClient from './client';
-import type { APIKey, APIKeyWithPlain, OperationLog } from '@book-of-ages/shared';
+import type { APIKey, APIKeyScope, APIKeyWithPlain, OperationLog } from '@book-of-ages/shared';
 
 /**
  * 获取 API Key 列表
@@ -15,8 +15,11 @@ export async function getAPIKeys(): Promise<Omit<APIKey, 'key_hash'>[]> {
 /**
  * 创建 API Key
  */
-export async function createAPIKey(name: string): Promise<APIKeyWithPlain> {
-  return apiClient.post<APIKeyWithPlain>('/api/settings/keys', { name });
+export async function createAPIKey(
+  name: string,
+  scopes: APIKeyScope[] = ['write']
+): Promise<APIKeyWithPlain> {
+  return apiClient.post<APIKeyWithPlain>('/api/settings/keys', { name, scopes });
 }
 
 /**

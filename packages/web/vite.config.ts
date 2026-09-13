@@ -14,13 +14,10 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      // 开发环境同源代理：前端请求 /api、/uploads 时转发到本地后端
+      // 开发环境同源代理：前端请求 /api 时转发到本地后端
+      // （媒体统一经 /api/materials/:id/preview 流式输出，无独立的 /uploads 静态路由）
       // 生产环境由 nginx 承担同样的反代职责
       '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-      },
-      '/uploads': {
         target: 'http://localhost:3000',
         changeOrigin: true,
       },

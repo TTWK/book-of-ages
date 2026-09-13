@@ -36,7 +36,17 @@
             class="p-4 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-center"
           >
             <div>
-              <h3 class="text-sm font-semibold text-gray-800">{{ key.name }}</h3>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-semibold text-gray-800">{{ key.name }}</h3>
+                <span
+                  v-for="scope in key.scopes"
+                  :key="scope"
+                  class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border"
+                  :class="scopeBadgeClass(scope)"
+                >
+                  {{ scope }}
+                </span>
+              </div>
               <p class="text-xs text-gray-500 mt-1 flex items-center">
                 <Clock class="w-3 h-3 mr-1" />
                 最后使用:
@@ -130,9 +140,12 @@
         </h2>
       </div>
       <p class="text-xs text-gray-500 mb-4 leading-relaxed">
-        后端对新增/修改/删除等写操作启用了 API Key 鉴权。请粘贴在下方"API Key 管理"中生成的密钥，
+        后端对所有接口（含读取）启用了 API Key 鉴权。请粘贴在下方"API Key 管理"中生成的密钥，
         或部署时配置的
-        <code class="bg-gray-100 px-1 rounded">ADMIN_API_KEY</code>。密钥仅保存在本浏览器。
+        <code class="bg-gray-100 px-1 rounded">ADMIN_API_KEY</code>。密钥仅保存在本浏览器；
+        <code class="bg-gray-100 px-1 rounded">admin</code>
+        钥匙视为人工操作（可确认收录），<code class="bg-gray-100 px-1 rounded">write</code>
+        钥匙视为 Agent（创建自动落草稿）。
       </p>
       <div class="flex items-center gap-3">
         <n-input
@@ -171,6 +184,29 @@
             class="w-full p-2 border border-gray-200 rounded-md outline-none focus:border-[#0D9488]"
             placeholder="例如：Daily Crawler Agent"
           />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">权限级别</label>
+          <n-radio-group v-model:value="keyForm.scope" name="key-scope">
+            <div class="space-y-2">
+              <div
+                v-for="option in scopeOptions"
+                :key="option.value"
+                class="flex items-start gap-2 p-2 rounded-md border"
+                :class="
+                  keyForm.scope === option.value
+                    ? 'border-[#0D9488] bg-[#F0FDFA]'
+                    : 'border-gray-200'
+                "
+              >
+                <n-radio :value="option.value" class="mt-0.5" />
+                <div>
+                  <p class="text-sm font-semibold text-gray-800">{{ option.label }}</p>
+                  <p class="text-xs text-gray-500">{{ option.description }}</p>
+                </div>
+              </div>
+            </div>
+          </n-radio-group>
         </div>
       </div>
 
@@ -244,12 +280,36 @@ import {
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { KeyRound } from 'lucide-vue-next';
-import type { APIKey, OperationLog } from '@book-of-ages/shared';
+import type { APIKey, APIKeyScope, OperationLog } from '@book-of-ages/shared';
 import { getAPIKeys, createAPIKey, deleteAPIKey, getOperationLogs } from '../api/settingsApi';
 import { useAppStore } from '../stores/app';
 
 const message = useMessage();
 const appStore = useAppStore();
+
+const scopeOptions: Array<{ label: string; value: APIKeyScope; description: string }> = [
+  {
+    label: 'admin（人工）',
+    value: 'admin',
+    description: '本浏览器使用：全权，可确认收录、修改已收录事件、管理钥匙',
+  },
+  {
+    label: 'write（Agent）',
+    value: 'write',
+    description: '外部 AI Agent 使用：可创建/修改/删除，创建自动落入草稿箱待人工确认',
+  },
+  {
+    label: 'read（只读）',
+    value: 'read',
+    description: '仅允许读取与检索，不能改动任何数据',
+  },
+];
+
+function scopeBadgeClass(scope: string): string {
+  if (scope === 'admin') return 'text-amber-700 bg-amber-50 border-amber-200';
+  if (scope === 'write') return 'text-teal-700 bg-teal-50 border-teal-200';
+  return 'text-gray-600 bg-gray-100 border-gray-200';
+}
 const localKeyInput = ref('');
 const maskedKey = computed(() => {
   const key = appStore.apiKey || '';
@@ -279,7 +339,7 @@ const showCreateKeyModal = ref(false);
 const creating = ref(false);
 const createdKey = ref<{ plain_key: string } | null>(null);
 
-const keyForm = ref({ name: '' });
+const keyForm = ref({ name: '', scope: 'write' as APIKeyScope });
 
 async function loadAPIKeys() {
   try {
@@ -302,7 +362,7 @@ async function handleCreateKey() {
 
   creating.value = true;
   try {
-    const result = await createAPIKey(keyForm.value.name);
+    const result = await createAPIKey(keyForm.value.name.trim(), [keyForm.value.scope]);
     createdKey.value = result;
     loadAPIKeys();
   } catch (_error) {
@@ -333,6 +393,7 @@ function closeKeyModal() {
   showCreateKeyModal.value = false;
   createdKey.value = null;
   keyForm.value.name = '';
+  keyForm.value.scope = 'write';
 }
 
 function getActionColor(action: string) {

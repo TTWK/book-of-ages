@@ -58,6 +58,15 @@
                   <Link class="w-4 h-4 mr-1.5" />
                   来源链接
                 </a>
+
+                <span
+                  v-if="!isEditing && provenanceLabel"
+                  class="flex items-center text-xs text-stone-400 border border-stone-200 px-1.5 py-0.5 rounded"
+                  :title="'收录来源：' + event.created_by"
+                >
+                  <UserRound class="w-3.5 h-3.5 mr-1" />
+                  {{ provenanceLabel }}
+                </span>
               </div>
             </div>
 
@@ -578,6 +587,7 @@ import {
   ExternalLink,
   X,
   Download,
+  UserRound,
 } from 'lucide-vue-next';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -632,6 +642,18 @@ const materials = ref<Material[]>([]);
 const isEditing = ref(false);
 const saving = ref(false);
 const exporting = ref(false);
+
+// 收录来源（provenance）：admin 钥匙与匿名=人工；write 钥匙=Agent；mcp/import 有专属标识
+const provenanceLabel = computed(() => {
+  const createdBy = event.value?.created_by;
+  if (!createdBy) return '';
+  if (createdBy === 'mcp') return 'Agent (MCP) 收录';
+  if (createdBy === 'import') return '批量导入';
+  if (event.value?.created_by_scope === 'write') {
+    return `Agent（${event.value?.created_by_name || createdBy}）收录`;
+  }
+  return '人工收录';
+});
 
 const showStatusModal = ref(false);
 const savingStatus = ref(false);

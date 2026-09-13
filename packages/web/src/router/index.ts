@@ -42,6 +42,12 @@ const routes = [
     meta: { title: '标签' },
   },
   {
+    path: '/suggestions',
+    name: 'suggestions',
+    component: () => import('../views/SuggestionsView.vue'),
+    meta: { title: 'AI 建议' },
+  },
+  {
     path: '/search',
     name: 'search',
     component: () => import('../views/SearchView.vue'),

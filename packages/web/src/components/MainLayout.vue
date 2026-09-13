@@ -160,9 +160,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import appRouter from '../router';
+import { useMessage } from 'naive-ui';
 import {
   BookOpen,
   Inbox,
@@ -173,11 +174,13 @@ import {
   ScrollText,
   TrendingUp,
   UploadCloud,
+  Sparkles,
 } from 'lucide-vue-next';
 import { useAppStore } from '../stores/app';
 import { useCommonShortcuts } from '../composables/useKeyboardShortcuts';
 
 const appStore = useAppStore();
+const message = useMessage();
 
 // Fallback to the imported router instance if the inject context is lost
 const router = useRouter() || appRouter;
@@ -218,8 +221,25 @@ const navItems = [
   { label: '事件库', key: 'events', icon: FileText },
   { label: '收件箱', key: 'inbox', icon: Inbox },
   { label: '时间线', key: 'timeline', icon: CalendarDays },
+  { label: 'AI 建议', key: 'suggestions', icon: Sparkles },
   { label: '史料导入', key: 'imports', icon: UploadCloud },
 ];
+
+// 全局 401：所有接口一律鉴权，未配置/失效密钥时引导用户到设置页
+function onUnauthorized() {
+  if (!appStore.apiKey) {
+    message.warning('需要有效的 API Key：请在"设置"页配置后重试', { duration: 4000 });
+  }
+  router.push({ name: 'settings' });
+}
+
+onMounted(() => {
+  window.addEventListener('boa:unauthorized', onUnauthorized);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('boa:unauthorized', onUnauthorized);
+});
 
 function handleMenuClick(key: string) {
   if (router) {

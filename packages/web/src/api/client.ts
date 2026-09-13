@@ -70,6 +70,14 @@ class ApiClient {
       (error: AxiosError<ApiResponse<unknown>>) => {
         if (error.response) {
           const data = error.response.data;
+          // 全局 401：所有接口均需鉴权，未配置/失效密钥时通知应用引导用户去设置页
+          if (error.response.status === 401) {
+            window.dispatchEvent(
+              new CustomEvent('boa:unauthorized', {
+                detail: { url: error.config?.url ?? '' },
+              })
+            );
+          }
           if (data && !data.success && data.error) {
             console.error('[API] 业务错误:', data.error);
             return Promise.reject(

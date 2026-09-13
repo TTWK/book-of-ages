@@ -5,28 +5,31 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import {
   createTag,
-  listTags,
   getTagById,
   updateTag,
   deleteTag,
   getTagEventCount,
   getTagEventDetails,
 } from '../services/tagService';
+import { all } from '../db';
 import { logOperation } from '../services/operationLogService';
-import type { CreateTagInput, UpdateTagInput } from '@book-of-ages/shared';
+import type { CreateTagInput, UpdateTagInput, Tag } from '@book-of-ages/shared';
+
+/** 带事件计数的标签（相关子查询一次取回，避免 N+1） */
+async function listTagsWithCount(): Promise<Array<Tag & { eventCount: number }>> {
+  return all<Tag & { eventCount: number }>(`
+    SELECT t.*, (
+      SELECT COUNT(*) FROM event_tags et WHERE et.tag_id = t.id
+    ) as eventCount
+    FROM tags t
+    ORDER BY t.parent_id, t.name
+  `);
+}
 
 export async function tagRoutes(fastify: FastifyInstance): Promise<void> {
   // 获取标签列表
   fastify.get('/api/tags', async (request: FastifyRequest, reply: FastifyReply) => {
-    const tags = await listTags();
-
-    // 为每个标签添加事件数量
-    const tagsWithCount = await Promise.all(
-      tags.map(async (tag) => ({
-        ...tag,
-        eventCount: await getTagEventCount(tag.id),
-      }))
-    );
+    const tagsWithCount = await listTagsWithCount();
 
     reply.send({
       success: true,
@@ -70,15 +73,30 @@ export async function tagRoutes(fastify: FastifyInstance): Promise<void> {
         return;
       }
 
-      const tag = await createTag(input);
+      try {
+        const tag = await createTag({ ...input, name: input.name.trim() });
 
-      // 记录操作日志
-      await logOperation('CREATE', 'Tag', tag.id, request.apiKeyId);
+        // 记录操作日志
+        await logOperation('CREATE', 'Tag', tag.id, request.apiKeyId);
 
-      reply.code(201).send({
-        success: true,
-        data: tag,
-      });
+        reply.code(201).send({
+          success: true,
+          data: tag,
+        });
+      } catch (error) {
+        // SQLite UNIQUE 约束冲突：同名标签已存在
+        if (
+          error instanceof Error &&
+          (error as NodeJS.ErrnoException).code?.startsWith('SQLITE_CONSTRAINT')
+        ) {
+          reply.code(409).send({
+            success: false,
+            error: { code: 'DUPLICATE_NAME', message: '同名标签已存在' },
+          });
+          return;
+        }
+        throw error;
+      }
     }
   );
 
@@ -118,8 +136,8 @@ export async function tagRoutes(fastify: FastifyInstance): Promise<void> {
           type: 'object',
           properties: {
             name: { type: 'string' },
-            parent_id: { type: 'string' },
-            color: { type: 'string' },
+            parent_id: { type: ['string', 'null'] },
+            color: { type: ['string', 'null'] },
           },
         },
       },
@@ -144,7 +162,19 @@ export async function tagRoutes(fastify: FastifyInstance): Promise<void> {
         return;
       }
 
-      const updatedTag = await updateTag(request.params.id, request.body);
+      let updatedTag: Awaited<ReturnType<typeof updateTag>>;
+      try {
+        updatedTag = await updateTag(request.params.id, request.body);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'TAG_CYCLE') {
+          reply.code(400).send({
+            success: false,
+            error: { code: 'TAG_CYCLE', message: '不能选择自己或自己的后代作为父标签' },
+          });
+          return;
+        }
+        throw error;
+      }
 
       if (!updatedTag) {
         reply.code(500).send({

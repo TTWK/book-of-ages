@@ -52,10 +52,32 @@ export async function getTagByName(name: string): Promise<Tag | null> {
 }
 
 /**
+ * 校验 parent_id 不构成循环引用（不能选自己或自己的后代作为父标签）
+ * @throws Error('TAG_CYCLE') 当检测到循环时
+ */
+async function assertNoTagCycle(id: string, parentId: string): Promise<void> {
+  const visited = new Set<string>([id]);
+  let current: string | null = parentId;
+
+  while (current) {
+    if (visited.has(current)) {
+      throw new Error('TAG_CYCLE');
+    }
+    visited.add(current);
+    const tag = await getTagById(current);
+    current = tag?.parent_id ?? null;
+  }
+}
+
+/**
  * 更新标签
  */
 export async function updateTag(id: string, input: UpdateTagInput): Promise<Tag | null> {
   const now = new Date().toISOString();
+
+  if (input.parent_id) {
+    await assertNoTagCycle(id, input.parent_id);
+  }
 
   const updates: string[] = [];
   const values: (string | null)[] = [];

@@ -6,9 +6,10 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { resolveDataDir } from '../db';
 import type { MaterialType } from '@book-of-ages/shared';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const DATA_DIR = resolveDataDir();
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 
 /**
@@ -79,28 +80,57 @@ export function saveCasFile(
 }
 
 /**
- * 保存上传的文件
- * @param file 文件对象（来自 multipart）
+ * 各材料类型允许的扩展名白名单（other 不限制）
+ */
+const ALLOWED_EXTENSIONS: Partial<Record<MaterialType, string[]>> = {
+  image: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.avif'],
+  video: ['.mp4', '.webm', '.mov', '.mkv'],
+  pdf: ['.pdf'],
+  snapshot: ['.html', '.htm', '.mhtml', '.mht'],
+};
+
+/**
+ * 校验上传文件扩展名是否与材料类型匹配
+ * @returns null 表示合法，否则返回错误信息
+ */
+export function validateUploadExtension(filename: string, type: MaterialType): string | null {
+  const allowed = ALLOWED_EXTENSIONS[type];
+  if (!allowed) return null; // other 类型不限制
+
+  const ext = path.extname(filename).toLowerCase();
+  if (!ext) {
+    return `无法识别文件扩展名，${type} 类型要求: ${allowed.join(', ')}`;
+  }
+  if (!allowed.includes(ext)) {
+    return `文件类型不匹配：${type} 类型不允许上传 ${ext} 文件`;
+  }
+  return null;
+}
+
+/**
+ * 保存上传的文件内容（内存缓冲区 → 磁盘）
+ * @param buffer 文件内容
+ * @param filename 原始文件名（用于保留扩展名）
  * @param type 材料类型
  * @returns 文件存储路径
  */
 export async function saveUploadedFile(
-  file: { filename: string; mimetype: string; toBuffer: () => Promise<Buffer> },
+  buffer: Buffer,
+  filename: string,
   type: MaterialType
 ): Promise<string> {
   ensureUploadDir();
 
   // 生成唯一文件名
-  const ext = path.extname(file.filename);
-  const filename = `${uuidv4()}${ext}`;
-  const filePath = path.join(UPLOAD_DIR, type, filename);
+  const ext = path.extname(filename).toLowerCase();
+  const filenameSafe = `${uuidv4()}${ext}`;
+  const filePath = path.join(UPLOAD_DIR, type, filenameSafe);
 
   // 保存文件
-  const buffer = await file.toBuffer();
   fs.writeFileSync(filePath, buffer);
 
   // 返回相对路径（用于数据库存储）
-  return `uploads/${type}/${filename}`;
+  return `uploads/${type}/${filenameSafe}`;
 }
 
 /**

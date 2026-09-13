@@ -5,6 +5,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { createAPIKey, listAPIKeys, deleteAPIKey } from '../services/apiKeyService';
 import { getOperationLogs } from '../services/operationLogService';
+import { bootstrapAuthMiddleware } from '../middleware/auth';
 import type { CreateAPIKeyInput } from '@book-of-ages/shared';
 
 export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
@@ -19,25 +20,25 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   });
 
   // 创建新的 API Key
-  fastify.post(
+  // 鉴权策略：常规请求强制携带密钥；未配置 ADMIN_API_KEY 且系统中还没有
+  // 任何密钥时，允许匿名创建第一把密钥（首次引导）
+  fastify.post<{
+    Body: CreateAPIKeyInput;
+  }>(
     '/api/settings/keys',
     {
+      preHandler: bootstrapAuthMiddleware,
       schema: {
         body: {
           type: 'object',
           required: ['name'],
           properties: {
-            name: { type: 'string' },
+            name: { type: 'string', maxLength: 100 },
           },
         },
       },
     },
-    async (
-      request: FastifyRequest<{
-        Body: CreateAPIKeyInput;
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const { name } = request.body;
 
       if (!name || name.trim() === '') {
@@ -51,12 +52,27 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
         return;
       }
 
-      const apiKey = await createAPIKey({ name });
+      try {
+        const apiKey = await createAPIKey({ name: name.trim() });
 
-      reply.code(201).send({
-        success: true,
-        data: apiKey,
-      });
+        reply.code(201).send({
+          success: true,
+          data: apiKey,
+        });
+      } catch (error) {
+        // SQLite UNIQUE 约束冲突：名称重复
+        if (
+          error instanceof Error &&
+          (error as NodeJS.ErrnoException).code?.startsWith('SQLITE_CONSTRAINT')
+        ) {
+          reply.code(409).send({
+            success: false,
+            error: { code: 'DUPLICATE_NAME', message: '同名 API Key 已存在' },
+          });
+          return;
+        }
+        throw error;
+      }
     }
   );
 
@@ -92,7 +108,7 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
         querystring: {
           type: 'object',
           properties: {
-            limit: { type: 'number', default: 100 },
+            limit: { type: 'number', default: 100, maximum: 500 },
           },
         },
       },
@@ -103,7 +119,7 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       }>,
       reply: FastifyReply
     ) => {
-      const { limit = 100 } = request.query;
+      const limit = Math.min(request.query.limit ?? 100, 500);
 
       const logs = await getOperationLogs(limit);
 

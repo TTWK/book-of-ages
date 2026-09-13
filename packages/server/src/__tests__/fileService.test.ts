@@ -5,6 +5,7 @@ import {
   deleteFile,
   fileExists,
   getMimeType,
+  validateUploadExtension,
 } from '../services/fileService';
 import fs from 'fs';
 import path from 'path';
@@ -22,44 +23,21 @@ describe('fileService', () => {
 
   describe('saveUploadedFile', () => {
     it('should save file and return relative path', async () => {
-      const mockFile = {
-        filename: 'test.jpg',
-        mimetype: 'image/jpeg',
-        toBuffer: async () => Buffer.from('test image content'),
-      };
-
-      const result = await saveUploadedFile(mockFile, 'image');
+      const result = await saveUploadedFile(Buffer.from('test image content'), 'test.jpg', 'image');
 
       // 返回的路径是 uploads/type/uuid.jpg
       expect(result).toMatch(/^uploads\/image\/[a-f0-9-]+\.jpg$/);
     });
 
     it('should create unique filenames with UUID', async () => {
-      const mockFile1 = {
-        filename: 'test1.txt',
-        mimetype: 'text/plain',
-        toBuffer: async () => Buffer.from('content1'),
-      };
-      const mockFile2 = {
-        filename: 'test2.txt',
-        mimetype: 'text/plain',
-        toBuffer: async () => Buffer.from('content2'),
-      };
-
-      const result1 = await saveUploadedFile(mockFile1, 'other');
-      const result2 = await saveUploadedFile(mockFile2, 'other');
+      const result1 = await saveUploadedFile(Buffer.from('content1'), 'test1.txt', 'other');
+      const result2 = await saveUploadedFile(Buffer.from('content2'), 'test2.txt', 'other');
 
       expect(result1).not.toBe(result2);
     });
 
     it('should preserve file extension', async () => {
-      const mockFile = {
-        filename: 'document.pdf',
-        mimetype: 'application/pdf',
-        toBuffer: async () => Buffer.from('pdf content'),
-      };
-
-      const result = await saveUploadedFile(mockFile, 'pdf');
+      const result = await saveUploadedFile(Buffer.from('pdf content'), 'document.pdf', 'pdf');
 
       expect(result).toMatch(/\.pdf$/);
     });
@@ -68,29 +46,40 @@ describe('fileService', () => {
       const types = ['image', 'video', 'pdf', 'snapshot', 'other'] as const;
 
       for (const type of types) {
-        const mockFile = {
-          filename: `test.${type}`,
-          mimetype: 'application/octet-stream',
-          toBuffer: async () => Buffer.from(`${type} content`),
-        };
-
-        const result = await saveUploadedFile(mockFile, type);
+        const result = await saveUploadedFile(
+          Buffer.from(`${type} content`),
+          `test.${type === 'snapshot' ? 'html' : type}`,
+          type
+        );
 
         expect(result).toMatch(new RegExp(`^uploads/${type}/`));
       }
     });
 
     it('should actually create the file on disk', async () => {
-      const mockFile = {
-        filename: 'existence-test.txt',
-        mimetype: 'text/plain',
-        toBuffer: async () => Buffer.from('exists'),
-      };
-
-      const result = await saveUploadedFile(mockFile, 'other');
+      const result = await saveUploadedFile(Buffer.from('exists'), 'existence-test.txt', 'other');
       const fullPath = getFilePath(result);
 
       expect(fs.existsSync(fullPath)).toBe(true);
+    });
+  });
+
+  describe('validateUploadExtension', () => {
+    it('should allow matching extensions for type', () => {
+      expect(validateUploadExtension('photo.jpg', 'image')).toBeNull();
+      expect(validateUploadExtension('clip.mp4', 'video')).toBeNull();
+      expect(validateUploadExtension('doc.pdf', 'pdf')).toBeNull();
+      expect(validateUploadExtension('page.html', 'snapshot')).toBeNull();
+    });
+
+    it('should reject mismatched extensions', () => {
+      expect(validateUploadExtension('page.html', 'image')).not.toBeNull();
+      expect(validateUploadExtension('virus.exe', 'pdf')).not.toBeNull();
+      expect(validateUploadExtension('noext', 'video')).not.toBeNull();
+    });
+
+    it('should not restrict the other type', () => {
+      expect(validateUploadExtension('anything.bin', 'other')).toBeNull();
     });
   });
 
@@ -113,13 +102,11 @@ describe('fileService', () => {
 
   describe('deleteFile', () => {
     it('should delete existing file', async () => {
-      const mockFile = {
-        filename: 'to-delete.txt',
-        mimetype: 'text/plain',
-        toBuffer: async () => Buffer.from('delete me'),
-      };
-
-      const relativePath = await saveUploadedFile(mockFile, 'other');
+      const relativePath = await saveUploadedFile(
+        Buffer.from('delete me'),
+        'to-delete.txt',
+        'other'
+      );
       const deleted = deleteFile(relativePath);
 
       expect(deleted).toBe(true);
@@ -132,13 +119,11 @@ describe('fileService', () => {
     });
 
     it('should actually remove the file from disk', async () => {
-      const mockFile = {
-        filename: 'verify-delete.txt',
-        mimetype: 'text/plain',
-        toBuffer: async () => Buffer.from('delete and verify'),
-      };
-
-      const relativePath = await saveUploadedFile(mockFile, 'other');
+      const relativePath = await saveUploadedFile(
+        Buffer.from('delete and verify'),
+        'verify-delete.txt',
+        'other'
+      );
       const fullPath = getFilePath(relativePath);
 
       expect(fs.existsSync(fullPath)).toBe(true);
@@ -151,13 +136,11 @@ describe('fileService', () => {
 
   describe('fileExists', () => {
     it('should return true for existing file', async () => {
-      const mockFile = {
-        filename: 'check-exists.txt',
-        mimetype: 'text/plain',
-        toBuffer: async () => Buffer.from('exists'),
-      };
-
-      const relativePath = await saveUploadedFile(mockFile, 'other');
+      const relativePath = await saveUploadedFile(
+        Buffer.from('exists'),
+        'check-exists.txt',
+        'other'
+      );
 
       expect(fileExists(relativePath)).toBe(true);
     });

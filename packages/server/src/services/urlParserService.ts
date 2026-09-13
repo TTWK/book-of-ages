@@ -4,6 +4,7 @@
  */
 
 import type { ParsedURLResult, ParseURLInput } from '@book-of-ages/shared';
+import { safeFetch } from './urlGuard';
 
 /**
  * 解析 URL 内容
@@ -25,19 +26,13 @@ export async function parseURL(input: ParseURLInput): Promise<ParsedURLResult> {
   // 来实际抓取和解析网页内容
 
   try {
-    // 尝试使用 fetch 获取网页内容（设置 3 秒超时）
-    const response = await fetch(url, {
+    // 经 SSRF 防护抓取网页内容（设置 3 秒超时）
+    const { body: html } = await safeFetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; BookOfAges/1.0)',
       },
       signal: AbortSignal.timeout(3000),
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP 错误：${response.status}`);
-    }
-
-    const html = await response.text();
 
     // 提取标题
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);

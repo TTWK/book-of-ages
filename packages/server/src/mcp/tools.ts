@@ -34,6 +34,10 @@ export const MCP_TOOLS: McpTool[] = [
           items: { type: 'string' },
           description: '关联的标签名称列表（如 ["科技", "OpenAI"]）',
         },
+        raw_html: {
+          type: 'string',
+          description: '可选：剪藏端本地 DOM 快照 HTML，传入后不再远程抓取',
+        },
         auto_confirm: {
           type: 'boolean',
           description: '是否直接正式收录（true 为 confirmed，false 为 draft 草稿）',
@@ -153,8 +157,10 @@ export async function executeMcpTool(
       const customTitle = args.title ? String(args.title) : undefined;
       const tags = Array.isArray(args.tags) ? (args.tags as string[]) : [];
       const autoConfirm = Boolean(args.auto_confirm);
+      // 剪藏端本地 DOM 快照：保存登录态下用户所见页面（服务端直接抓取是无 cookie 版本）
+      const rawHtml = args.raw_html ? String(args.raw_html) : undefined;
 
-      const snapshot = await captureSnapshot(url, { title: customTitle });
+      const snapshot = await captureSnapshot(url, { title: customTitle, rawHtml });
       const event = await createEvent({
         title: snapshot.title,
         summary: snapshot.excerpt,

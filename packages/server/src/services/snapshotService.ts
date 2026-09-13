@@ -4,6 +4,7 @@
  */
 
 import { saveCasFile } from './fileService';
+import { safeFetch } from './urlGuard';
 import type { SnapshotResult, SnapshotAsset } from '@book-of-ages/shared';
 
 export interface SnapshotOptions {
@@ -165,8 +166,8 @@ export async function captureSnapshot(
   let html = options?.rawHtml;
 
   if (!html) {
-    // 远程抓取
-    const response = await fetch(url, {
+    // 远程抓取（经 SSRF 防护：私网地址/重定向逐跳复检/响应体限长）
+    const { body } = await safeFetch(url, {
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 BookOfAges/1.0',
@@ -175,11 +176,7 @@ export async function captureSnapshot(
       signal: AbortSignal.timeout(3000),
     });
 
-    if (!response.ok) {
-      throw new Error(`抓取网页失败，HTTP 状态码: ${response.status}`);
-    }
-
-    html = await response.text();
+    html = body;
   }
 
   const nowIso = new Date().toISOString();

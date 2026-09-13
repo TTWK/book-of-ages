@@ -14,6 +14,17 @@ import type {
 } from '@book-of-ages/shared';
 
 /**
+ * 归一化事件日期：统一为 YYYY-MM-DD（避免完整 ISO 时间戳与日期串混排）
+ */
+function normalizeEventDate(date: string | null | undefined): string | null {
+  if (!date) return null;
+  const trimmed = String(date).trim();
+  if (!trimmed) return null;
+  // 截取日期部分（兼容 "YYYY-MM-DDTHH:mm:ss.sssZ" 等完整 ISO 格式）
+  return trimmed.slice(0, 10);
+}
+
+/**
  * 创建事件
  */
 export async function createEvent(input: CreateEventInput): Promise<Event> {
@@ -32,7 +43,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
       input.summary || null,
       input.content || null,
       status,
-      input.event_date || null,
+      normalizeEventDate(input.event_date),
       input.source_url || null,
       now,
       now,
@@ -48,6 +59,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
 
 /**
  * 获取事件列表
+ * @param status 传 'deleted' 时返回回收站（已软删除事件）；其余情况默认排除已删除
  */
 export async function listEvents(options?: {
   status?: EventStatus;
@@ -59,12 +71,20 @@ export async function listEvents(options?: {
   const pageSize = options?.pageSize || 20;
   const offset = (page - 1) * pageSize;
 
-  let whereClause = 'WHERE e.deleted_at IS NULL';
+  let whereClause: string;
   const params: (string | number)[] = [];
 
-  if (options?.status) {
-    whereClause += ' AND e.status = ?';
-    params.push(options.status);
+  if (options?.status === 'deleted') {
+    // 回收站：仅返回已软删除的事件
+    whereClause = 'WHERE e.status = ? AND e.deleted_at IS NOT NULL';
+    params.push('deleted');
+  } else {
+    whereClause = 'WHERE e.deleted_at IS NULL AND e.status != ?';
+    params.push('deleted');
+    if (options?.status) {
+      whereClause += ' AND e.status = ?';
+      params.push(options.status);
+    }
   }
 
   if (options?.tagId) {
@@ -142,6 +162,7 @@ export async function getEventById(id: string): Promise<Event | null> {
 
 /**
  * 更新事件
+ * 约定：字段传 null 表示清空（写入 NULL），undefined 表示不修改
  */
 export async function updateEvent(
   id: string,
@@ -177,23 +198,32 @@ export async function updateEvent(
   }
   if (input.summary !== undefined) {
     updates.push('summary = ?');
-    values.push(input.summary);
+    values.push(input.summary === null ? null : input.summary);
   }
   if (input.content !== undefined) {
     updates.push('content = ?');
-    values.push(input.content);
+    values.push(input.content === null ? null : input.content);
   }
   if (input.status !== undefined) {
     updates.push('status = ?');
     values.push(input.status);
+    // 软删除语义同步：置为 deleted 时同时写入 deleted_at；
+    // 从 deleted 恢复为其他状态时清除 deleted_at
+    if (input.status === 'deleted') {
+      updates.push('deleted_at = ?');
+      values.push(now);
+    } else if (existingEvent.status === 'deleted') {
+      updates.push('deleted_at = ?');
+      values.push(null);
+    }
   }
   if (input.event_date !== undefined) {
     updates.push('event_date = ?');
-    values.push(input.event_date);
+    values.push(input.event_date === null ? null : normalizeEventDate(input.event_date));
   }
   if (input.source_url !== undefined) {
     updates.push('source_url = ?');
-    values.push(input.source_url);
+    values.push(input.source_url === null ? null : input.source_url);
   }
 
   if (updates.length === 0) {
@@ -212,6 +242,32 @@ export async function updateEvent(
   );
 
   return getEventById(id);
+}
+
+/**
+ * 恢复回收站中的事件（清除 deleted_at，状态回到草稿）
+ */
+export async function restoreEvent(id: string): Promise<Event | null> {
+  const now = new Date().toISOString();
+
+  const result = await run(
+    `
+    UPDATE events
+    SET deleted_at = NULL, status = 'draft', updated_at = ?
+    WHERE id = ? AND deleted_at IS NOT NULL
+  `,
+    [now, id]
+  );
+
+  if (result.changes === 0) {
+    return null;
+  }
+
+  const event = await get<Event>(`SELECT * FROM events WHERE id = ?`, [id]);
+  if (event) {
+    event.tags = await getEventTags(id);
+  }
+  return event || null;
 }
 
 /**
@@ -237,7 +293,6 @@ export async function deleteEvent(id: string): Promise<boolean> {
  * 使用事务保证原子性
  */
 export async function batchCreateEvents(inputs: CreateEventInput[]): Promise<Event[]> {
-  const events: Event[] = [];
   const now = new Date().toISOString();
   const queries: Array<{ sql: string; params: unknown[] }> = [];
   const ids: string[] = [];
@@ -257,7 +312,7 @@ export async function batchCreateEvents(inputs: CreateEventInput[]): Promise<Eve
         input.summary || null,
         input.content || null,
         status,
-        input.event_date || null,
+        normalizeEventDate(input.event_date),
         input.source_url || null,
         now,
         now,
@@ -268,10 +323,18 @@ export async function batchCreateEvents(inputs: CreateEventInput[]): Promise<Eve
   const { transaction } = await import('../db');
   await transaction(queries);
 
-  // 批量获取结果
+  // 一次 IN 查询取回全部结果（避免逐条 N+1）
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = await all<Event>(`SELECT * FROM events WHERE id IN (${placeholders})`, ids);
+  const rowsById = new Map(rows.map((row) => [row.id, row]));
+
+  const events: Event[] = [];
   for (const id of ids) {
-    const event = await getEventById(id);
-    if (event) events.push(event);
+    const row = rowsById.get(id);
+    if (row) {
+      row.tags = await getEventTags(id);
+      events.push(row);
+    }
   }
 
   return events;

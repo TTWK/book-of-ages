@@ -37,6 +37,39 @@ export async function logOperation(
 }
 
 /**
+ * 批量记录操作日志（单事务插入，避免逐条 await）
+ */
+export async function logOperations(
+  entries: Array<{
+    action: OperationAction;
+    entity_type: OperationEntityType;
+    entity_id: string;
+    api_key_id?: string;
+  }>
+): Promise<void> {
+  if (entries.length === 0) return;
+
+  const now = new Date().toISOString();
+  const { transaction } = await import('../db');
+  const queries = entries.map((entry) => ({
+    sql: `
+    INSERT INTO operation_logs (id, api_key_id, action, entity_type, entity_id, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `,
+    params: [
+      uuidv4(),
+      entry.api_key_id || null,
+      entry.action,
+      entry.entity_type,
+      entry.entity_id,
+      now,
+    ],
+  }));
+
+  await transaction(queries);
+}
+
+/**
  * 获取操作日志列表
  */
 export async function getOperationLogs(limit: number = 100): Promise<OperationLog[]> {

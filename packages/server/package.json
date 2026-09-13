@@ -5,6 +5,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "start:mcp": "node dist/bin/mcp-server.js",
+    "dev:mcp": "tsx src/bin/mcp-server.ts",
     "test": "vitest run",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",

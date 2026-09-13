@@ -9,11 +9,31 @@ import fs from 'fs';
 import { schema } from './schema';
 
 let db: Database | null = null;
+
+/**
+ * 数据目录解析优先级：
+ * 1. DATABASE_PATH —— 完整数据库文件路径
+ * 2. DATA_DIR —— 数据目录（Docker 部署约定）
+ * 3. <cwd>/data —— 本地开发默认
+ */
+export function resolveDataDir(): string {
+  if (process.env.DATABASE_PATH) {
+    return path.dirname(process.env.DATABASE_PATH);
+  }
+  return process.env.DATA_DIR || path.join(process.cwd(), 'data');
+}
+
 const DB_PATH =
   process.env.DATABASE_PATH ||
   (process.env.NODE_ENV === 'test'
-    ? path.join(process.cwd(), 'data', `test-${process.pid}-${Date.now()}.db`)
-    : path.join(process.cwd(), 'data', 'book-of-ages.db'));
+    ? path.join(resolveDataDir(), `test-${process.pid}-${Date.now()}.db`)
+    : path.join(resolveDataDir(), 'book-of-ages.db'));
+
+/**
+ * 事务互斥锁：SQLite 单连接上并发的 BEGIN/COMMIT 会交错，
+ * 用 Promise 链保证同一时刻只有一个事务在执行。
+ */
+let transactionChain: Promise<unknown> = Promise.resolve();
 
 /**
  * 获取数据库实例（单例模式）
@@ -63,9 +83,10 @@ export function initDatabase(): Promise<Database> {
 
       console.info(`Database initialized at: ${DB_PATH}`);
 
-      // 启用外键约束和 WAL 模式（提高并发性能）
+      // 启用外键约束、WAL 模式与 busy_timeout（提高并发性能与稳定性）
       db!.run('PRAGMA foreign_keys = ON');
       db!.run('PRAGMA journal_mode = WAL');
+      db!.run('PRAGMA busy_timeout = 5000');
 
       // 执行 Schema 创建表
       db!.exec(schema, (err) => {
@@ -79,6 +100,13 @@ export function initDatabase(): Promise<Database> {
         db!.run('ALTER TABLE materials ADD COLUMN snapshot_html_path TEXT', () => {});
         db!.run('ALTER TABLE materials ADD COLUMN file_hash TEXT', () => {});
         db!.run('ALTER TABLE materials ADD COLUMN file_size INTEGER', () => {});
+
+        // 播种管理员引导行：ADMIN_API_KEY 环境变量鉴权成功后以 'admin' 身份
+        // 记录审计日志，需要该行满足 operation_logs 的外键约束
+        db!.run(
+          `INSERT OR IGNORE INTO api_keys (id, name, key_hash, created_at, updated_at)
+           VALUES ('admin', 'ADMIN_BOOTSTRAP (ADMIN_API_KEY)', 'not-a-real-key-hash', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+        );
 
         resolve(db!);
       });
@@ -177,55 +205,63 @@ export function all<T>(sql: string, params: unknown[] = []): Promise<T[]> {
 
 /**
  * 运行事务（自动包装 BEGIN/COMMIT/ROLLBACK）
+ * 通过互斥链保证同一连接上事务不会交错执行。
  * @param queries 要执行的 SQL 查询数组，每个查询包含 sql 和 params
  * @returns 所有查询的结果数组
  */
 export async function transaction(
   queries: Array<{ sql: string; params?: unknown[] }>
 ): Promise<Array<{ changes: number }>> {
-  return new Promise((resolve, reject) => {
-    const database = getDatabase();
+  const execute = () =>
+    new Promise<Array<{ changes: number }>>((resolve, reject) => {
+      const database = getDatabase();
 
-    // 开始事务
-    database.run('BEGIN TRANSACTION', (err: Error | null) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      const results: Array<{ changes: number }> = [];
-
-      const executeNext = (index: number) => {
-        if (index >= queries.length) {
-          // 所有查询完成，提交事务
-          database.run('COMMIT', (commitErr: Error | null) => {
-            if (commitErr) {
-              // 提交失败，回滚
-              database.run('ROLLBACK', () => {
-                reject(commitErr);
-              });
-              return;
-            }
-            resolve(results);
-          });
+      // 开始事务
+      database.run('BEGIN TRANSACTION', (err: Error | null) => {
+        if (err) {
+          reject(err);
           return;
         }
 
-        const { sql, params = [] } = queries[index];
-        database.run(sql, params, function (this: sqlite3.RunResult, runErr: Error | null) {
-          if (runErr) {
-            // 查询失败，回滚
-            database.run('ROLLBACK', () => {
-              reject(runErr);
+        const results: Array<{ changes: number }> = [];
+
+        const executeNext = (index: number) => {
+          if (index >= queries.length) {
+            // 所有查询完成，提交事务
+            database.run('COMMIT', (commitErr: Error | null) => {
+              if (commitErr) {
+                // 提交失败，回滚
+                database.run('ROLLBACK', () => {
+                  reject(commitErr);
+                });
+                return;
+              }
+              resolve(results);
             });
             return;
           }
-          results.push({ changes: this.changes });
-          executeNext(index + 1);
-        });
-      };
 
-      executeNext(0);
+          const { sql, params = [] } = queries[index];
+          database.run(sql, params, function (this: sqlite3.RunResult, runErr: Error | null) {
+            if (runErr) {
+              // 查询失败，回滚
+              database.run('ROLLBACK', () => {
+                reject(runErr);
+              });
+              return;
+            }
+            results.push({ changes: this.changes });
+            executeNext(index + 1);
+          });
+        };
+
+        executeNext(0);
+      });
     });
-  });
+
+  // 排队等待前序事务完成后执行
+  const result = transactionChain.then(execute, execute);
+  // 链条吞掉失败，保证后续事务不受前序失败影响
+  transactionChain = result.catch(() => {});
+  return result;
 }

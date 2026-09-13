@@ -34,10 +34,14 @@ export const importRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const { type, content } = request.body || {};
-    if (!content || !type) {
+    const validTypes: ImportType[] = ['bookmarks', 'urls', 'markdown_zip'];
+    if (!content || !type || !validTypes.includes(type)) {
       return reply.status(400).send({
         success: false,
-        error: { code: 'INVALID_INPUT', message: '导入类型和内容不能为空' },
+        error: {
+          code: 'INVALID_INPUT',
+          message: '导入类型必须为 bookmarks/urls/markdown_zip，且内容不能为空',
+        },
       });
     }
 

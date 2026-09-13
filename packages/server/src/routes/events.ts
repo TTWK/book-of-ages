@@ -10,10 +10,11 @@ import {
   getEventById,
   updateEvent,
   deleteEvent,
+  restoreEvent,
   batchUpdateEvents,
 } from '../services/eventService';
 import { getEventTags, updateEventTags } from '../services/tagService';
-import { logOperation, logUIOperation } from '../services/operationLogService';
+import { logOperation, logOperations } from '../services/operationLogService';
 import type { CreateEventInput, UpdateEventInput, EventStatus } from '@book-of-ages/shared';
 
 export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
@@ -127,16 +128,34 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
       const { ids, updates } = request.body;
       const result = await batchUpdateEvents(ids, updates, request.apiKeyId);
 
-      // 记录批量操作日志
-      for (const id of result.successIds) {
-        if (request.apiKeyId) {
-          await logOperation('UPDATE', 'Event', id, request.apiKeyId);
-        } else {
-          await logUIOperation('UPDATE', 'Event', id);
-        }
-      }
+      // 批量记录操作日志（单事务）
+      await logOperations(
+        result.successIds.map((id) => ({
+          action: 'UPDATE' as const,
+          entity_type: 'Event' as const,
+          entity_id: id,
+          api_key_id: request.apiKeyId,
+        }))
+      );
 
       reply.send({ success: true, data: result });
+    }
+  );
+
+  // 恢复回收站中的事件
+  fastify.post(
+    '/api/events/:id/restore',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const restored = await restoreEvent(request.params.id);
+      if (!restored) {
+        reply.code(404).send({
+          success: false,
+          error: { code: 'NOT_FOUND', message: '事件不存在或不在回收站中' },
+        });
+        return;
+      }
+      await logOperation('UPDATE', 'Event', restored.id, request.apiKeyId);
+      reply.send({ success: true, data: restored });
     }
   );
 
@@ -175,11 +194,11 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
           type: 'object',
           properties: {
             title: { type: 'string' },
-            summary: { type: 'string' },
-            content: { type: 'string' },
+            summary: { type: ['string', 'null'] },
+            content: { type: ['string', 'null'] },
             status: { type: 'string', enum: ['draft', 'confirmed', 'archived', 'deleted'] },
-            event_date: { type: 'string' },
-            source_url: { type: 'string' },
+            event_date: { type: ['string', 'null'] },
+            source_url: { type: ['string', 'null'] },
           },
         },
       },
@@ -211,7 +230,7 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         if (request.apiKeyId) {
           await logOperation('UPDATE', 'Event', event.id, request.apiKeyId);
         } else {
-          await logUIOperation('UPDATE', 'Event', event.id);
+          await logOperation('UPDATE', 'Event', event.id);
         }
         reply.send({ success: true, data: updatedEvent });
       } catch (error) {
@@ -253,7 +272,7 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
       if (request.apiKeyId) {
         await logOperation('DELETE', 'Event', event.id, request.apiKeyId);
       } else {
-        await logUIOperation('DELETE', 'Event', event.id);
+        await logOperation('DELETE', 'Event', event.id);
       }
       reply.send({ success: true, data: null });
     }

@@ -27,11 +27,15 @@ export interface CreateEventInput {
 
 export interface UpdateEventInput {
   title?: string;
-  summary?: string;
-  content?: string;
+  /** 传 null 表示清空该字段 */
+  summary?: string | null;
+  /** 传 null 表示清空该字段 */
+  content?: string | null;
   status?: EventStatus;
-  event_date?: string;
-  source_url?: string;
+  /** 传 null 表示清空该字段 */
+  event_date?: string | null;
+  /** 传 null 表示清空该字段 */
+  source_url?: string | null;
 }
 
 // ==================== 时间线节点 (Timeline Nodes) ====================
@@ -214,9 +218,10 @@ export interface CreateImportTaskInput {
 
 export interface WebClipperPayload {
   url: string;
-  title: string;
+  title?: string;
   selectedText?: string;
-  fullHtml?: string;
+  /** 剪藏端本地 DOM 快照，用于保存登录态下用户所见页面（服务端抓取是无 cookie 版本） */
+  raw_html?: string;
   tags?: string[];
   notes?: string;
   autoConfirm?: boolean;

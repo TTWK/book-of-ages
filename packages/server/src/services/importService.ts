@@ -78,19 +78,22 @@ export async function createImportTask(type: ImportType, content: string): Promi
     [taskId, type, totalCount, totalCount === 0 ? 'completed' : 'pending', now, now]
   );
 
-  // 批量插入明细项
-  for (const item of extracted) {
-    const itemId = uuidv4();
-    await run(
-      `
+  const createdTask = (await get<ImportTask>('SELECT * FROM import_tasks WHERE id = ?', [taskId]))!;
+
+  // 批量插入明细项（单事务，避免大书签文件下逐条写入既慢又不原子）
+  if (extracted.length > 0) {
+    const nowItems = new Date().toISOString();
+    const { transaction } = await import('../db');
+    await transaction(
+      extracted.map((item) => ({
+        sql: `
       INSERT INTO import_task_items (id, task_id, source_url, title, status, created_at)
       VALUES (?, ?, ?, ?, 'pending', ?)
     `,
-      [itemId, taskId, item.url, item.title || null, now]
+        params: [uuidv4(), taskId, item.url, item.title || null, nowItems],
+      }))
     );
   }
-
-  const createdTask = (await get<ImportTask>('SELECT * FROM import_tasks WHERE id = ?', [taskId]))!;
 
   // 触发后台异步处理
   if (totalCount > 0) {
@@ -139,6 +142,28 @@ export async function getImportTaskDetail(
   );
 
   return { task, items };
+}
+
+/**
+ * 服务启动时恢复被中断的导入任务：
+ * 进程内队列没有持久化执行器，重启后 pending/processing 任务无法继续，
+ * 统一标记为失败并注明原因，避免永久停留在 processing。
+ */
+export async function recoverStaleImportTasks(): Promise<void> {
+  const now = new Date().toISOString();
+  const result = await run(
+    `
+    UPDATE import_tasks
+    SET status = 'failed',
+        error_log = '服务重启导致任务中断，请重新提交',
+        updated_at = ?
+    WHERE status IN ('pending', 'processing')
+  `,
+    [now]
+  );
+  if (result.changes > 0) {
+    console.warn(`Recovered ${result.changes} stale import task(s) after restart`);
+  }
 }
 
 /**

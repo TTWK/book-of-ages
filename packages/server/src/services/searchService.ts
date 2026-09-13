@@ -30,11 +30,10 @@ export async function simpleSearch(
   };
 
   // FTS5 查询语法处理
-  // 对于中文，直接使用 keyword 进行匹配，FTS5 会使用 Unicode 分词
-  // 需要转义特殊字符
+  // 将关键词包裹为 FTS5 字符串字面量，避免 `-`、`AND`、`OR`、括号等
+  // 被解释为查询语法（内部引号按 FTS5 规则转义为两个引号）
   const escapeFtsQuery = (query: string) => {
-    // 转义 FTS5 特殊字符
-    return query.replace(/["\\]/g, '\\$&');
+    return `"${query.replace(/"/g, '""')}"`;
   };
 
   const ftsQuery = escapeFtsQuery(keyword);

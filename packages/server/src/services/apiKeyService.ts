@@ -76,6 +76,7 @@ export async function getAPIKeyById(id: string): Promise<Omit<APIKey, 'key_hash'
 
 /**
  * 验证 API Key
+ * last_used 更新做了 60 秒节流，避免每次请求都写库
  */
 export async function verifyAPIKey(key: string): Promise<APIKey | null> {
   const keyHash = hashAPIKey(key);
@@ -88,13 +89,18 @@ export async function verifyAPIKey(key: string): Promise<APIKey | null> {
   );
 
   if (apiKey) {
-    // 更新最后使用时间
-    await run(
-      `
+    const now = Date.now();
+    const lastUsed = apiKey.last_used ? Date.parse(apiKey.last_used) : 0;
+    // 距上次记录超过 60 秒才写库，减少写放大
+    if (now - lastUsed > 60_000) {
+      const nowIso = new Date().toISOString();
+      await run(
+        `
       UPDATE api_keys SET last_used = ?, updated_at = ? WHERE id = ?
     `,
-      [new Date().toISOString(), new Date().toISOString(), apiKey.id]
-    );
+        [nowIso, nowIso, apiKey.id]
+      );
+    }
   }
 
   return apiKey || null;

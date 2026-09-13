@@ -55,10 +55,11 @@ export async function toolRoutes(fastify: FastifyInstance): Promise<void> {
       url: string;
       title?: string;
       tags?: string[];
+      raw_html?: string;
       auto_confirm?: boolean;
     };
   }>('/api/tools/archive-url', async (request, reply) => {
-    const { url, title, tags, auto_confirm } = request.body || {};
+    const { url, title, tags, raw_html, auto_confirm } = request.body || {};
 
     if (!url || !url.trim()) {
       return reply.code(400).send({
@@ -72,6 +73,7 @@ export async function toolRoutes(fastify: FastifyInstance): Promise<void> {
         url,
         title,
         tags,
+        raw_html: raw_html,
         auto_confirm,
       });
 

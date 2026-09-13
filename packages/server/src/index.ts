@@ -3,7 +3,8 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import { initDatabase, closeDatabase } from './db';
-import { authPlugin, optionalAuthMiddleware } from './middleware/auth';
+import { authPlugin, optionalAuthMiddleware, enforceAuthOnMutations } from './middleware/auth';
+import { recoverStaleImportTasks } from './services/importService';
 import { eventRoutes } from './routes/events';
 import { timelineRoutes } from './routes/timeline';
 import { materialRoutes } from './routes/materials';
@@ -36,8 +37,11 @@ fastify.register(multipart, {
   },
 });
 
-// 全局认证中间件（可选认证）
+// 全局认证中间件（可选认证：标记合法密钥，供审计与权限判断使用）
 fastify.addHook('preHandler', optionalAuthMiddleware);
+
+// 写操作（非 GET/HEAD/OPTIONS）自动强制 API Key 鉴权（须在路由注册前挂载）
+enforceAuthOnMutations(fastify);
 
 // 健康检查
 fastify.get('/', async () => {
@@ -65,6 +69,8 @@ const start = async () => {
 
   try {
     await initDatabase();
+    // 服务重启后，把中断的导入任务标记为失败（避免永久停留在 processing）
+    await recoverStaleImportTasks();
     await fastify.listen({ port, host: '0.0.0.0' });
     console.info(`Server running at http://localhost:${port}`);
   } catch (err) {

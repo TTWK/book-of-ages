@@ -5,8 +5,8 @@
  */
 
 import readline from 'readline';
-import { initDatabase } from '../src/db';
-import { handleMcpJsonRpcMessage, JsonRpcRequest } from '../src/mcp/server';
+import { initDatabase } from '../db';
+import { handleMcpJsonRpcMessage, JsonRpcRequest } from '../mcp/server';
 
 async function startStdioMcp() {
   await initDatabase();

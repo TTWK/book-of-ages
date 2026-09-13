@@ -53,10 +53,11 @@ jobs:
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGELOG: ${{ steps.changelog.outputs.CHANGELOG }}
         run: |
           gh release create "v${{ github.event.inputs.version }}" \
             --title "Release v${{ github.event.inputs.version }}" \
-            --notes "${{ steps.changelog.outputs.CHANGELOG }}"
+            --notes "$CHANGELOG"
 
       # === 预留：NAS 部署步骤 ===
       # 取消注释并配置 SSH Key 后可用

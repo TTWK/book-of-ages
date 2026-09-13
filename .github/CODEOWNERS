@@ -1,3 +1,4 @@
 # 所有代码变更都需要仓库所有者审核
-# 实施时需将 @YOUR_GITHUB_USERNAME 替换为实际的 GitHub 用户名
+# TODO: 将下面的占位符替换为实际的 GitHub 用户名/团队后生效
+# （在替换之前，该文件不会匹配任何所有者，GitHub 会忽略其规则）
 * @YOUR_GITHUB_USERNAME

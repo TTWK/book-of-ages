@@ -1,17 +1,15 @@
-# Dependencies
+# 依赖与构建产物
 node_modules/
-
-# Build outputs
 dist/
 build/
 
-# Data directory
-data/
+# 数据目录（任意层级：运行时数据库与上传文件严禁进入镜像）
+**/data/
 
-# Environment files
-.env
-.env.local
-.env.*.local
+# 环境变量（任意层级）
+**/.env
+**/.env.local
+**/.env.*.local
 
 # IDE
 .idea/
@@ -23,19 +21,19 @@ data/
 .DS_Store
 Thumbs.db
 
-# Logs
+# 日志
 logs/
 *.log
 npm-debug.log*
 
-# Test coverage
+# 测试覆盖率
 coverage/
 
-# Temporary files
+# 临时文件
 tmp/
 temp/
 
-# Documentation
+# 文档
 docs/
 README.md
 AGENTS.md
@@ -49,3 +47,10 @@ Dockerfile
 Dockerfile.web
 docker-compose.yml
 .dockerignore
+
+# 工具目录
+.claude/
+.gemini/
+.qwen/
+.github/
+.husky/

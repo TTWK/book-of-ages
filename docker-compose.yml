@@ -9,14 +9,14 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      # 数据持久化
+      # 数据持久化（数据库、上传文件、快照均在 DATA_DIR 下）
       - ./data:/app/data
-      # 媒体文件存储
-      - ./data/media:/app/data/media
     environment:
       - NODE_ENV=production
       - PORT=3000
       - DATA_DIR=/app/data
+      # 写接口鉴权引导：设置后可用该密钥管理 API Key（不设置时允许匿名创建第一把密钥）
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-}
     healthcheck:
       test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:3000/health']
       interval: 30s
@@ -31,6 +31,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+      # 同源部署留空即可（nginx 反代 /api）；分离部署时传入完整后端地址
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-}
     container_name: book-of-ages-web
     restart: unless-stopped
     ports:
@@ -44,7 +47,3 @@ services:
 networks:
   book-of-ages-network:
     driver: bridge
-
-volumes:
-  data:
-    driver: local

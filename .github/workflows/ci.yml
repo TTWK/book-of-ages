@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20]
+        node-version: [20, 22]
 
     steps:
       - name: Checkout code
@@ -22,12 +22,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Rebuild native modules
-        run: npm rebuild sqlite3
 
       - name: Check code formatting
         run: npm run format:check
@@ -43,3 +41,18 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    needs: CI
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 部署冒烟：验证两个镜像均可构建，避免运行时才发现产物问题
+      - name: Build server image
+        run: docker build -f Dockerfile -t book-of-ages-server-smoke .
+
+      - name: Build web image
+        run: docker build -f Dockerfile.web -t book-of-ages-web-smoke .

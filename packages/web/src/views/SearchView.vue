@@ -178,8 +178,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useMessage } from 'naive-ui';
 import {
   Search,
@@ -199,6 +199,7 @@ import { EmptyState } from '../components/ui';
 
 const message = useMessage();
 const router = useRouter();
+const route = useRoute();
 
 const searchQuery = ref('');
 const searchType = ref<'all' | 'event' | 'material' | 'timeline'>('all');
@@ -252,4 +253,13 @@ async function handleSearch() {
 function viewEvent(id: string) {
   router.push(`/events/${id}`);
 }
+
+// 支持从顶部导航/外部链接携带 ?q= 进入时自动检索
+onMounted(() => {
+  const q = route.query.q;
+  if (typeof q === 'string' && q.trim()) {
+    searchQuery.value = q.trim();
+    handleSearch();
+  }
+});
 </script>

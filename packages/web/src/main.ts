@@ -1,8 +1,8 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
-import naive from 'naive-ui';
 import App from './App.vue';
 import router from './router';
+import { useAppStore } from './stores/app';
 import './style.css';
 
 // Workaround: Edge 浏览器在页面隐藏时调用 history.replaceState 会触发窗口激活，
@@ -19,6 +19,8 @@ const pinia = createPinia();
 
 app.use(pinia);
 app.use(router);
-app.use(naive);
+
+// 恢复本地存储的 API Key（写操作需要鉴权）
+useAppStore(pinia).initApiKey();
 
 app.mount('#app');

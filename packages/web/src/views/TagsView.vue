@@ -154,8 +154,29 @@ const treeData = computed<TagTreeNode[]>(() => {
 });
 
 const parentTagOptions = computed(() => {
+  // 排除自己与所有后代，防止形成循环引用（服务端同样校验）
+  const excluded = new Set<string>();
+
+  if (editingTag.value) {
+    excluded.add(editingTag.value.id);
+    const childrenOf = new Map<string, string[]>();
+    for (const t of tags.value) {
+      if (t.parent_id) {
+        if (!childrenOf.has(t.parent_id)) childrenOf.set(t.parent_id, []);
+        childrenOf.get(t.parent_id)!.push(t.id);
+      }
+    }
+    const stack = [...(childrenOf.get(editingTag.value.id) ?? [])];
+    while (stack.length > 0) {
+      const id = stack.pop()!;
+      if (excluded.has(id)) continue;
+      excluded.add(id);
+      stack.push(...(childrenOf.get(id) ?? []));
+    }
+  }
+
   return tags.value
-    .filter((t) => !editingTag.value || t.id !== editingTag.value.id)
+    .filter((t) => !excluded.has(t.id))
     .map((t) => ({
       label: t.name,
       value: t.id,

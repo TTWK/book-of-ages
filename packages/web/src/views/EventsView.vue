@@ -45,29 +45,40 @@
         </div>
 
         <div class="flex items-center space-x-4">
+          <template v-if="statusFilter !== 'deleted'">
+            <button
+              @click="handleBatchExport"
+              :disabled="batchProcessing"
+              class="flex items-center hover:text-stone-300 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
+            >
+              <Download class="w-4 h-4 mr-2" />
+              批量导出
+            </button>
+            <button
+              @click="handleBatchArchive"
+              :disabled="batchProcessing"
+              class="flex items-center hover:text-stone-300 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
+            >
+              <Archive class="w-4 h-4 mr-2" />
+              批量归档
+            </button>
+            <button
+              @click="handleBatchDelete"
+              :disabled="batchProcessing"
+              class="flex items-center hover:text-red-400 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
+            >
+              <Trash2 class="w-4 h-4 mr-2" />
+              批量删除
+            </button>
+          </template>
           <button
-            @click="handleBatchExport"
+            v-else
+            @click="handleBatchRestore"
             :disabled="batchProcessing"
-            class="flex items-center hover:text-stone-300 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
+            class="flex items-center hover:text-emerald-300 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
           >
-            <Download class="w-4 h-4 mr-2" />
-            批量导出
-          </button>
-          <button
-            @click="handleBatchArchive"
-            :disabled="batchProcessing"
-            class="flex items-center hover:text-stone-300 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
-          >
-            <Archive class="w-4 h-4 mr-2" />
-            批量归档
-          </button>
-          <button
-            @click="handleBatchDelete"
-            :disabled="batchProcessing"
-            class="flex items-center hover:text-red-400 transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
-          >
-            <Trash2 class="w-4 h-4 mr-2" />
-            批量删除
+            <RotateCcw class="w-4 h-4 mr-2" />
+            批量恢复
           </button>
           <button
             @click="selectedIds = []"
@@ -135,22 +146,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
-import { Plus, Inbox as InboxIcon, Archive, Trash2, Download, X } from 'lucide-vue-next';
-import type { Event, EventStatus, CreateEventInput } from '@book-of-ages/shared';
+import { Plus, Inbox as InboxIcon, Archive, Trash2, Download, RotateCcw, X } from 'lucide-vue-next';
+import type { Event, EventStatus, CreateEventInput, UpdateEventInput } from '@book-of-ages/shared';
 import {
   getEventList,
   createEvent,
   updateEvent,
   deleteEvent,
+  restoreEvent,
   getEventTags,
   updateEventTags,
   batchUpdateEvents,
   batchExportEvents,
 } from '../api/eventApi';
-import { getTagList, createTag } from '../api/tagApi';
+import { getTagList } from '../api/tagApi';
+import { processTagValues } from '../utils/tags';
+import { toDateOnly } from '../utils/date';
 import { EmptyState, LoadingSkeleton } from '../components/ui';
 import { useCommonUndoActions } from '../composables/useUndo';
 import EventCard from '../components/EventCard.vue';
@@ -227,6 +241,27 @@ async function handleBatchArchive() {
   }
 }
 
+async function handleBatchRestore() {
+  if (selectedIds.value.length === 0) return;
+  batchProcessing.value = true;
+  try {
+    let restored = 0;
+    for (const id of selectedIds.value) {
+      try {
+        await restoreEvent(id);
+        restored++;
+      } catch (_e) {
+        // 单条恢复失败继续其余
+      }
+    }
+    message.success(`成功恢复 ${restored} 条事件`);
+    selectedIds.value = [];
+    await loadEvents();
+  } finally {
+    batchProcessing.value = false;
+  }
+}
+
 async function handleBatchDelete() {
   if (selectedIds.value.length === 0) return;
   if (!confirm(`确定要删除选中的 ${selectedIds.value.length} 条事件吗？`)) return;
@@ -257,6 +292,7 @@ const statusOptions = [
   { label: '待处理', value: 'draft' },
   { label: '正式收录', value: 'confirmed' },
   { label: '已归档', value: 'archived' },
+  { label: '回收站', value: 'deleted' },
 ];
 
 const eventForm = ref({
@@ -268,9 +304,9 @@ const eventForm = ref({
   tags: [] as string[],
 });
 
-const paginationState = {
+const paginationState = reactive({
   itemCount: 0,
-};
+});
 
 function openCreateModal() {
   editingEventId.value = null;
@@ -313,14 +349,8 @@ async function handleDelete(event: Event) {
       events.value = events.value.filter((e) => e.id !== event.id);
     },
     async () => {
-      await createEvent({
-        title: event.title,
-        summary: event.summary,
-        content: event.content,
-        status: event.status,
-        event_date: event.event_date,
-        source_url: event.source_url,
-      });
+      // 通过回收站恢复接口还原，保留原事件 ID 与标签/材料/时间线关联
+      await restoreEvent(event.id);
       await loadEvents();
     },
     '事件'
@@ -350,9 +380,6 @@ function onPageChange(page: number) {
   loadEvents();
 }
 
-const PRESET_COLORS = ['#71717a', '#14b8a6', '#eab308', '#f43f5e', '#22c55e', '#3b82f6'];
-const getRandomColor = () => PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
-
 interface EventFormData {
   title: string;
   summary?: string;
@@ -362,36 +389,15 @@ interface EventFormData {
   tags?: string[];
 }
 
-async function processTagsInEventsView(tagValues: string[]): Promise<string[]> {
-  const finalTagIds: string[] = [];
-  for (const value of tagValues) {
-    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-    if (isId) {
-      finalTagIds.push(value);
-    } else {
-      try {
-        const newTag = await createTag({
-          name: value,
-          color: getRandomColor(),
-        });
-        finalTagIds.push(newTag.id);
-      } catch (_e) {
-        // 创建标签失败忽略
-      }
-    }
-  }
-  return finalTagIds;
-}
-
 async function handleSave(formData: EventFormData) {
   try {
     const { tags: tagValues, ...rest } = formData;
-    const payload: CreateEventInput = {
+    const payload: CreateEventInput & UpdateEventInput = {
       title: rest.title,
-      summary: rest.summary,
-      content: rest.content,
-      source_url: rest.source_url,
-      event_date: formData.event_date ? new Date(formData.event_date).toISOString() : undefined,
+      summary: rest.summary === '' ? null : rest.summary,
+      content: rest.content === '' ? null : rest.content,
+      source_url: rest.source_url === '' ? null : rest.source_url,
+      event_date: toDateOnly(formData.event_date),
     };
 
     let eventId: string;
@@ -405,26 +411,30 @@ async function handleSave(formData: EventFormData) {
       message.success('已载入史册');
     }
 
-    if (editingEventId.value) {
-      if (tagValues) {
-        const finalTagIds = await processTagsInEventsView(tagValues);
-        await updateEventTags(eventId, finalTagIds);
-        await loadTags();
-      }
-    } else {
-      if (tagValues && tagValues.length > 0) {
-        const finalTagIds = await processTagsInEventsView(tagValues);
-        await updateEventTags(eventId, finalTagIds);
-        await loadTags();
-      }
+    if (tagValues && (editingEventId.value || tagValues.length > 0)) {
+      const finalTagIds = await processTagValues(tagValues);
+      await updateEventTags(eventId, finalTagIds);
+      await loadTags();
     }
 
     showEventModal.value = false;
     await loadEvents();
   } catch (error: unknown) {
-    const err = error as { status?: number; response?: { status?: number }; message?: string };
+    const err = error as {
+      status?: number;
+      code?: string;
+      response?: { status?: number };
+      message?: string;
+    };
     if (err.status === 403 || err.response?.status === 403) {
       message.error('无法修改：已成定论的历史不容篡改');
+    } else if (
+      err.status === 401 ||
+      err.response?.status === 401 ||
+      err.code === 'MISSING_API_KEY' ||
+      err.code === 'INVALID_API_KEY'
+    ) {
+      message.error('需要有效的 API Key：请在"设置"页配置后重试');
     } else {
       message.error(err.message || (editingEventId.value ? '修订失败' : '载入失败'));
     }

@@ -1,5 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import './assets/fonts.css';
 @import 'tailwindcss';
+
+@plugin '@tailwindcss/typography';
 
 /* ==================== Design Tokens ==================== */
 
@@ -39,6 +41,16 @@
   --color-cta-700: #a16207;
 
   /* --- Semantic Colors --- */
+  /* Warning (Amber) */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+
   /* Success (Sage) */
   --color-success-50: #f0fdf4;
   --color-success-500: #22c55e;

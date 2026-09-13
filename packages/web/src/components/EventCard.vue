@@ -82,6 +82,7 @@
 import { Calendar, Edit2, Trash2 } from 'lucide-vue-next';
 import type { Event } from '@book-of-ages/shared';
 import StatusBadge from './StatusBadge.vue';
+import { formatDate } from '../utils/date';
 
 defineProps<{
   event: Event;
@@ -95,12 +96,4 @@ defineEmits<{
   (e: 'delete', event: Event): void;
   (e: 'select', selected: boolean): void;
 }>();
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
 </script>

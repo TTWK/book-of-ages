@@ -9,9 +9,10 @@
     <template #header-extra>
       <div class="flex items-center space-x-2 mr-4">
         <a
-          v-if="snapshotUrl"
-          :href="snapshotUrl"
+          v-if="previewUrl"
+          :href="previewUrl"
           target="_blank"
+          rel="noopener noreferrer"
           class="text-xs px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded transition-colors flex items-center gap-1"
         >
           <ExternalLink class="w-3.5 h-3.5" />
@@ -28,10 +29,10 @@
         <Loader2 class="w-8 h-8 animate-spin text-teal-600" />
       </div>
       <iframe
-        v-if="snapshotUrl"
-        :src="snapshotUrl"
+        v-if="previewUrl"
+        :src="previewUrl"
         class="w-full h-full border-0 bg-white"
-        sandbox="allow-same-origin allow-scripts"
+        sandbox=""
         @load="loading = false"
       ></iframe>
       <div v-else class="flex items-center justify-center h-full text-stone-400">暂无快照文件</div>
@@ -42,11 +43,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { ExternalLink, Loader2 } from 'lucide-vue-next';
+import { getMaterialPreviewUrl } from '../api/materialApi';
 
 const props = defineProps<{
   show: boolean;
   title?: string;
-  snapshotPath?: string;
+  /** 材料 ID：快照经 /api/materials/:id/preview 提供服务（HTML 响应带 CSP sandbox，脚本禁用） */
+  materialId?: string;
 }>();
 
 defineEmits<{
@@ -54,21 +57,13 @@ defineEmits<{
 }>();
 
 const loading = ref(true);
-const snapshotUrl = ref<string>('');
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const previewUrl = ref<string>('');
 
 watch(
-  () => props.snapshotPath,
-  (path) => {
+  () => props.materialId,
+  (id) => {
     loading.value = true;
-    if (path) {
-      // 规整路径
-      const cleanPath = path.startsWith('/') ? path : `/${path}`;
-      snapshotUrl.value = `${API_BASE_URL}${cleanPath}`;
-    } else {
-      snapshotUrl.value = '';
-    }
+    previewUrl.value = id ? getMaterialPreviewUrl(id) : '';
   },
   { immediate: true }
 );

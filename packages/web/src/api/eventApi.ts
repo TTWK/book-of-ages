@@ -96,6 +96,13 @@ export async function deleteEvent(id: string): Promise<void> {
 }
 
 /**
+ * 从回收站恢复事件（清除 deleted_at，状态回到草稿）
+ */
+export async function restoreEvent(id: string): Promise<Event> {
+  return apiClient.post<Event>(`/api/events/${id}/restore`);
+}
+
+/**
  * 获取事件的标签
  */
 export async function getEventTags(id: string): Promise<Tag[]> {
@@ -113,13 +120,7 @@ export async function updateEventTags(id: string, tagIds: string[]): Promise<voi
  * 导出事件为 Markdown
  */
 export async function exportEvent(id: string): Promise<string> {
-  const axios = (await import('axios')).default;
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-
-  const response = await axios.get<string>(`${API_BASE_URL}/api/events/${id}/export`, {
-    responseType: 'text',
-  });
-  return response.data;
+  return apiClient.getRaw<string>(`/api/events/${id}/export`);
 }
 
 /**

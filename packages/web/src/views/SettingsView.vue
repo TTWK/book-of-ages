@@ -121,6 +121,46 @@
       </div>
     </div>
 
+    <!-- 本站 API Key（用于携带 X-API-Key 调用写接口） -->
+    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-[#134E4A] flex items-center">
+          <KeyRound class="w-5 h-5 mr-2 text-[#0D9488]" />
+          本站访问密钥
+        </h2>
+      </div>
+      <p class="text-xs text-gray-500 mb-4 leading-relaxed">
+        后端对新增/修改/删除等写操作启用了 API Key 鉴权。请粘贴在下方"API Key 管理"中生成的密钥，
+        或部署时配置的
+        <code class="bg-gray-100 px-1 rounded">ADMIN_API_KEY</code>。密钥仅保存在本浏览器。
+      </p>
+      <div class="flex items-center gap-3">
+        <n-input
+          v-model:value="localKeyInput"
+          type="password"
+          show-password-on="click"
+          placeholder="粘贴 API Key（boa_xxx 或管理员密钥）"
+          class="flex-1"
+        />
+        <button
+          @click="saveLocalKey"
+          class="px-5 py-2 text-white bg-[#0D9488] hover:bg-[#14B8A6] rounded-md text-sm font-bold transition-colors cursor-pointer whitespace-nowrap"
+        >
+          保存并启用
+        </button>
+        <button
+          v-if="appStore.apiKey"
+          @click="clearLocalKey"
+          class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md text-sm transition-colors cursor-pointer whitespace-nowrap"
+        >
+          清除
+        </button>
+      </div>
+      <p class="text-xs mt-3" :class="appStore.apiKey ? 'text-emerald-600' : 'text-gray-400'">
+        {{ appStore.apiKey ? `已启用密钥：${maskedKey}` : '未配置密钥：写操作将被拒绝（401）' }}
+      </p>
+    </div>
+
     <!-- Create API Key Modal -->
     <n-modal v-model:show="showCreateKeyModal" preset="card" class="max-w-md" title="生成 API Key">
       <div v-if="!createdKey" class="space-y-4">
@@ -202,10 +242,36 @@ import {
   Check,
   Loader2,
 } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { KeyRound } from 'lucide-vue-next';
 import type { APIKey, OperationLog } from '@book-of-ages/shared';
 import { getAPIKeys, createAPIKey, deleteAPIKey, getOperationLogs } from '../api/settingsApi';
+import { useAppStore } from '../stores/app';
 
 const message = useMessage();
+const appStore = useAppStore();
+const localKeyInput = ref('');
+const maskedKey = computed(() => {
+  const key = appStore.apiKey || '';
+  if (key.length <= 8) return key;
+  return `${key.slice(0, 6)}••••${key.slice(-4)}`;
+});
+
+function saveLocalKey() {
+  const key = localKeyInput.value.trim();
+  if (!key) {
+    message.warning('请输入 API Key');
+    return;
+  }
+  appStore.setApiKey(key);
+  localKeyInput.value = '';
+  message.success('密钥已保存，写操作鉴权已启用');
+}
+
+function clearLocalKey() {
+  appStore.clearApiKey();
+  message.success('已清除本地密钥');
+}
 
 const apiKeys = ref<Omit<APIKey, 'key_hash'>[]>([]);
 const logs = ref<OperationLog[]>([]);

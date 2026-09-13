@@ -175,12 +175,14 @@ async function handleImportUrl() {
 }
 
 async function handleSave() {
-  await formRef.value?.validate();
+  try {
+    await formRef.value?.validate();
+  } catch (_error) {
+    return; // 校验未通过：n-form 已就地展示错误信息
+  }
   saving.value = true;
   try {
     emit('save', form.value);
-  } catch (_error) {
-    // Error handled by parent
   } finally {
     saving.value = false;
   }

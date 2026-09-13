@@ -267,15 +267,14 @@ function getHeatmapColor(count: number): string {
 }
 
 function formatPeriod(period: string): string {
+  const [year, sub] = period.split('-');
   if (granularity.value === 'week') {
-    const parts = period.split('-');
-    return `W${parts[1] || parts[0]}`;
+    return sub ? `${year.slice(2)}年W${sub}` : `${year}年`;
   }
   if (granularity.value === 'month') {
-    const parts = period.split('-');
-    return `${parts[1] || parts[0]}月`;
+    return sub ? `${year.slice(2)}年${Number(sub)}月` : `${year}年`;
   }
-  return period;
+  return `${year}年`;
 }
 
 async function loadData() {

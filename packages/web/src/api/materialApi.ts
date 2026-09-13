@@ -60,7 +60,7 @@ export async function uploadMaterial(data: UploadMaterialData): Promise<Material
  * 获取材料预览 URL
  */
 export function getMaterialPreviewUrl(id: string): string {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
   return `${baseUrl}/api/materials/${id}/preview`;
 }
 

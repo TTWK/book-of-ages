@@ -553,7 +553,7 @@
     <SnapshotModal
       v-model:show="showSnapshotModal"
       :title="currentSnapshotTitle"
-      :snapshot-path="currentSnapshotPath"
+      :material-id="currentSnapshotMaterialId"
     />
   </div>
 </template>
@@ -590,10 +590,13 @@ import { LoadingSkeleton, StatusBadge } from '../components/ui';
 import SnapshotModal from '../components/SnapshotModal.vue';
 import { useIsMobile } from '../composables/useMediaQuery';
 import { useCommonUndoActions } from '../composables/useUndo';
+import { useConfirm } from '../composables/useConfirm';
+import { processTagValues } from '../utils/tags';
+import { toDateOnly } from '../utils/date';
 
 const showSnapshotModal = ref(false);
 const currentSnapshotTitle = ref('');
-const currentSnapshotPath = ref('');
+const currentSnapshotMaterialId = ref('');
 import {
   getEvent,
   updateEvent,
@@ -602,7 +605,7 @@ import {
   updateEventTags,
   exportEvent,
 } from '../api/eventApi';
-import { getTagList, createTag } from '../api/tagApi';
+import { getTagList } from '../api/tagApi';
 import {
   getTimelineNodes,
   createTimelineNode,
@@ -621,6 +624,7 @@ const route = useRoute();
 const router = useRouter();
 const isMobile = useIsMobile();
 const { removeTag: removeTagWithUndo } = useCommonUndoActions(message);
+const confirmAction = useConfirm();
 
 const loading = ref(true);
 const event = ref<Event | null>(null);
@@ -680,13 +684,10 @@ const timelineNodeOptions = computed(() => {
   return timelineNodes.value.map((n) => ({ label: n.title, value: n.id }));
 });
 
+import { formatDateShort, formatDateTime } from '../utils/date';
+
 function formatDate(dateStr: string | null | undefined, short = false): string {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  if (short)
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  return date.toLocaleString();
+  return short ? formatDateShort(dateStr) : formatDateTime(dateStr);
 }
 
 function handleBack() {
@@ -767,12 +768,11 @@ async function handleSave() {
   try {
     const updated = await updateEvent(event.value!.id, {
       title: editForm.value.title,
-      summary: editForm.value.summary || undefined,
-      content: editForm.value.content || undefined,
-      event_date: editForm.value.event_date
-        ? new Date(editForm.value.event_date).toISOString()
-        : undefined,
-      source_url: editForm.value.source_url || undefined,
+      // 传 null 表示清空字段（服务端约定），undefined 表示不修改
+      summary: editForm.value.summary === '' ? null : editForm.value.summary,
+      content: editForm.value.content === '' ? null : editForm.value.content,
+      event_date: toDateOnly(editForm.value.event_date),
+      source_url: editForm.value.source_url === '' ? null : editForm.value.source_url,
     });
     event.value = updated;
     isEditing.value = false;
@@ -785,7 +785,8 @@ async function handleSave() {
 }
 
 async function handleDelete() {
-  if (!confirm('确定要删除此事件吗？')) return;
+  const ok = await confirmAction({ content: '确定要删除此事件吗？', danger: true });
+  if (!ok) return;
   try {
     await deleteEvent(event.value!.id);
     message.success('已删除');
@@ -809,30 +810,20 @@ async function handleSaveStatus() {
   }
 }
 
-const PRESET_COLORS = ['#71717a', '#14b8a6', '#eab308', '#f43f5e', '#22c55e', '#3b82f6'];
-const getRandomColor = () => PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
-
 async function processTags(tagValues: string[]): Promise<string[]> {
-  const finalTagIds: string[] = [];
-
-  for (const value of tagValues) {
-    // 检查是否是 UUID 格式
-    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-
-    if (isId) {
-      finalTagIds.push(value);
-    } else {
-      // 创建新标签
-      try {
-        const newTag = await createTag({
-          name: value,
-          color: getRandomColor(),
-        });
-        allTags.value.push(newTag);
-        finalTagIds.push(newTag.id);
-      } catch (_e) {
-        // 创建标签失败忽略
+  const finalTagIds = await processTagValues(tagValues);
+  // 同步新创建的标签到本地列表
+  const knownIds = new Set(allTags.value.map((t) => t.id));
+  const missing = finalTagIds.filter((id) => !knownIds.has(id));
+  if (missing.length > 0) {
+    const known = new Map(allTags.value.map((t) => [t.id, t]));
+    try {
+      const fresh = await getTagList();
+      for (const tag of fresh) {
+        if (!known.has(tag.id)) allTags.value.push(tag);
       }
+    } catch (_e) {
+      // 刷新标签列表失败忽略
     }
   }
   return finalTagIds;
@@ -900,9 +891,7 @@ async function handleSaveTimeline() {
     const payload = {
       title: timelineForm.value.title,
       description: timelineForm.value.description || undefined,
-      node_date: timelineForm.value.node_date
-        ? new Date(timelineForm.value.node_date).toISOString()
-        : undefined,
+      node_date: toDateOnly(timelineForm.value.node_date),
       sort_order: timelineForm.value.sort_order,
     };
 
@@ -925,7 +914,8 @@ async function handleSaveTimeline() {
 }
 
 async function deleteTimelineNodeItem(node: TimelineNode) {
-  if (!confirm('删除该节点？')) return;
+  const ok = await confirmAction({ content: '删除该时间线节点？', danger: true });
+  if (!ok) return;
   try {
     await deleteTimelineNode(node.id);
     timelineNodes.value = timelineNodes.value.filter((n) => n.id !== node.id);
@@ -977,9 +967,10 @@ async function handleUploadMaterial() {
 }
 
 function previewMaterial(material: Material) {
+  // 快照一律经 /api/materials/:id/preview 提供（带 CSP sandbox，脚本禁用）
   if (material.type === 'snapshot' || material.snapshot_html_path) {
     currentSnapshotTitle.value = material.title || '网页证据快照';
-    currentSnapshotPath.value = material.snapshot_html_path || material.file_path;
+    currentSnapshotMaterialId.value = material.id;
     showSnapshotModal.value = true;
     return;
   }
@@ -993,7 +984,8 @@ function previewMaterial(material: Material) {
 }
 
 async function deleteMaterialItem(id: string) {
-  if (!confirm('删除该材料？')) return;
+  const ok = await confirmAction({ content: '删除该材料？', danger: true });
+  if (!ok) return;
   try {
     await deleteMaterial(id);
     materials.value = materials.value.filter((m) => m.id !== id);

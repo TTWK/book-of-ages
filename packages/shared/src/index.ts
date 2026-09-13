@@ -18,11 +18,15 @@ export interface Event {
 
 export interface CreateEventInput {
   title: string;
-  summary?: string;
-  content?: string;
+  /** 传 null 与不传等价（写入 NULL） */
+  summary?: string | null;
+  /** 传 null 与不传等价（写入 NULL） */
+  content?: string | null;
   status?: EventStatus;
-  event_date?: string;
-  source_url?: string;
+  /** 传 null 与不传等价（写入 NULL） */
+  event_date?: string | null;
+  /** 传 null 与不传等价（写入 NULL） */
+  source_url?: string | null;
 }
 
 export interface UpdateEventInput {

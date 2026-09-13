@@ -1,11 +1,16 @@
 /**
  * API 客户端封装
+ *
+ * baseURL 约定：
+ * - 默认为空字符串（同源相对路径）：生产环境经 nginx 将 /api 反代到后端
+ * - 本地开发经 vite dev server 代理转发（见 vite.config.ts）
+ * - 仅在直连场景（如clipper 调试）需要显式设置 VITE_API_BASE_URL
  */
 
 import axios, { type AxiosInstance, type AxiosError, type AxiosRequestConfig } from 'axios';
 import type { ApiResponse } from '@book-of-ages/shared';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export class ApiError extends Error {
   public code: string;
@@ -189,6 +194,18 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.get<ApiResponse<T>>(url, { params, ...config });
+      return response.data;
+    } catch (error) {
+      throw formatError(error);
+    }
+  }
+
+  /**
+   * GET 请求（返回原始响应体，用于下载导出等非 JSON 场景）
+   */
+  async getRaw<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    try {
+      const response = await this.client.get<T>(url, { responseType: 'text', ...config });
       return response.data;
     } catch (error) {
       throw formatError(error);

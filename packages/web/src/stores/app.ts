@@ -4,6 +4,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import apiClient from '../api/client';
 
 export const useAppStore = defineStore('app', () => {
   // 状态
@@ -18,17 +19,21 @@ export const useAppStore = defineStore('app', () => {
   function setApiKey(key: string) {
     apiKey.value = key;
     localStorage.setItem('boa_api_key', key);
+    // 同步到 API 客户端：后续请求自动携带 X-API-Key
+    apiClient.setApiKey(key);
   }
 
   function clearApiKey() {
     apiKey.value = null;
     localStorage.removeItem('boa_api_key');
+    apiClient.clearApiKey();
   }
 
   function initApiKey() {
     const stored = localStorage.getItem('boa_api_key');
     if (stored) {
       apiKey.value = stored;
+      apiClient.setApiKey(stored);
     }
   }
 

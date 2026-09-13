@@ -50,7 +50,7 @@
         v-for="event in events"
         :key="event.id"
         class="card-scrapbook p-5 group flex flex-col md:flex-row md:items-center justify-between gap-6 relative"
-        :class="{ 'border- stone-900 ring-1 ring-stone-900': selectedIds.includes(event.id) }"
+        :class="{ 'border-stone-900 ring-1 ring-stone-900': selectedIds.includes(event.id) }"
       >
         <!-- Checkbox Overlay -->
         <div class="absolute left-2 top-2 z-10">
@@ -118,6 +118,16 @@
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="totalCount > pageSize" class="flex justify-center pb-8">
+      <n-pagination
+        v-model:page="currentPage"
+        :item-count="totalCount"
+        :page-size="pageSize"
+        @update:page="onPageChange"
+      />
     </div>
 
     <!-- Batch Action Bar -->
@@ -254,6 +264,9 @@ const { archiveEvent } = useCommonUndoActions(message);
 
 const events = ref<Event[]>([]);
 const loading = ref(false);
+const currentPage = ref(1);
+const pageSize = 50;
+const totalCount = ref(0);
 const showPreview = ref(false);
 const selectedEvent = ref<Event | null>(null);
 
@@ -321,13 +334,19 @@ const {
 async function loadEvents() {
   loading.value = true;
   try {
-    const result = await getEventList({ status: 'draft', page: 1, pageSize: 50 });
+    const result = await getEventList({ status: 'draft', page: currentPage.value, pageSize });
     events.value = result.items;
+    totalCount.value = result.pagination.total;
   } catch (_error) {
     message.error('加载事件列表失败');
   } finally {
     loading.value = false;
   }
+}
+
+function onPageChange(page: number) {
+  currentPage.value = page;
+  loadEvents();
 }
 
 function openPreview(event: Event) {

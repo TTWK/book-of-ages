@@ -102,10 +102,21 @@ npm run build         # 验证构建
 
 ## 认证与安全
 
-- **API Key 强制鉴权**: 所有写操作（POST/PUT/DELETE，含上传与归档）要求请求头携带 `X-API-Key`；只读接口保持开放。
-  - 密钥在 Web「设置」页管理；浏览器本站密钥在「设置 → 本站访问密钥」保存（仅存于本浏览器 localStorage）。
-  - 环境变量 `ADMIN_API_KEY` 作为管理员引导密钥（审计日志中以内置 `admin` 身份记录）。
+> 权限分级与 AI 辅助体系的完整设计见 [AI 辅助体系设计稿](./superpowers/specs/2026-09-13-ai-assistance-design.md)。
+
+- **全接口鉴权**: 所有 `/api` 路由（含 GET 读接口）一律要求凭证；`/health` 等非 `/api` 路径保持开放供部署探针使用。
+  - 凭证双轨：`X-API-Key` 请求头（所有请求）；会话 cookie（仅读请求，供 `<img>`/`<iframe>` 媒体加载，经 `POST /api/auth/session` 以请求头换取，HMAC 签名短时效）。
+  - **写操作仅接受请求头**（会话 cookie 无法用于写，杜绝 CSRF 面）。
   - 首次引导：未配置 `ADMIN_API_KEY` 且系统中还没有任何密钥时，允许匿名创建第一把密钥。
+- **API Key 权限分级（scope）**:
+  - `admin`（人工钥匙）：全权，含 confirmed 核心字段修改、状态流转、钥匙管理、导入导出与审计。
+  - `write`（Agent 钥匙）：可增删改，但创建**一律落草稿**、confirmed 核心字段锁定、状态流转受限；MCP 通道整体按 write 语义对待。
+  - `read`（只读钥匙）：仅读取与检索。
+  - 密钥在 Web「设置」页按 scope 生成；浏览器本站密钥在「设置 → 本站访问密钥」保存（仅存于本浏览器 localStorage）。
+  - 环境变量 `ADMIN_API_KEY` 作为管理员引导密钥（审计日志中以内置 `admin` 身份记录）。
+- **AI 建议收件箱**: Agent 经 MCP 工具 `propose_suggestion` 或 `POST /api/suggestions` 提议（打标签/润色摘要/推断日期/疑似重复），建议不直接生效；人工在「AI 建议」页采纳后由服务端确定性执行并记入审计。
+- **结构化查询**: `POST /api/search/query` 为确定性查询执行器；自然语言到查询计划的翻译由外部 Agent 完成，服务端内核不含 LLM 调用。
+- **内容溯源**: 事件记录 `created_by`（人工 / Agent 钥匙 / MCP / 导入），详情页展示收录来源。
 - **SSRF 防护**: 所有服务端对外抓取（网页快照、URL 解析、批量导入）统一经 `services/urlGuard.ts`：
   仅允许 http/https 常规端口、拒绝私网/环回/链路本地地址（含云元数据）、重定向逐跳复检、响应体限长。
 - **快照安全**: 归档的 HTML 经 `/api/materials/:id/preview` 提供时强制 `CSP sandbox` 与 `nosniff`，脚本一律禁用。

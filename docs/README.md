@@ -135,3 +135,4 @@ docker compose up -d --build
 - **页眉布局优化**: [设计稿](./superpowers/specs/2026-05-06-optimize-header-layout-design.md) | [基础设计](./superpowers/specs/2026-05-06-optimize-header-design.md)
 - **CI/CD 标准**: [设计稿](./superpowers/specs/2026-04-11-dev-standards-cicd-design.md)
 - **全面代码审查（2026-09-13）**: [审查报告](./reviews/2026-09-13-comprehensive-code-review.md)
+- **AI 辅助体系**（权限分级 / 建议收件箱 / 自然语言检索）: [设计稿](./superpowers/specs/2026-09-13-ai-assistance-design.md)

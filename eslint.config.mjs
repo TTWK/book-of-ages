@@ -5,12 +5,7 @@ import vueParser from 'vue-eslint-parser';
 
 export default [
   {
-    ignores: [
-      '**/dist/**',
-      '**/node_modules/**',
-      '**/packages/shared/**',
-      '**/components.d.ts',
-    ],
+    ignores: ['**/dist/**', '**/node_modules/**', '**/packages/shared/**', '**/components.d.ts'],
   },
   // 后端 TypeScript 配置
   {

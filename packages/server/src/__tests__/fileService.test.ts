@@ -15,9 +15,13 @@ describe('fileService', () => {
   const testUploadDir = path.join(testDataDir, 'uploads');
 
   afterAll(() => {
-    // 清理测试文件
+    // 清理测试文件（并行 fork 可能同时写入 uploads 目录，忽略清理竞态错误）
     if (fs.existsSync(testUploadDir)) {
-      fs.rmSync(testUploadDir, { recursive: true, force: true });
+      try {
+        fs.rmSync(testUploadDir, { recursive: true, force: true });
+      } catch (_e) {
+        // 另一个测试进程正在使用该目录，跳过
+      }
     }
   });
 

@@ -228,7 +228,7 @@ export interface WebClipperPayload {
   raw_html?: string;
   tags?: string[];
   notes?: string;
-  autoConfirm?: boolean;
+  auto_confirm?: boolean;
 }
 
 // ==================== 通用 API 响应 ====================

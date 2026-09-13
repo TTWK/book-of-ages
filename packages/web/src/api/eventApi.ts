@@ -10,6 +10,7 @@ import type {
   EventStatus,
   Tag,
   BatchExportResult,
+  PaginationResult,
 } from '@book-of-ages/shared';
 
 export interface EventListParams {
@@ -19,29 +20,13 @@ export interface EventListParams {
   pageSize?: number;
 }
 
-export interface EventListResponse {
-  items: Event[];
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
-}
+export type EventListResponse = PaginationResult<Event>;
 
 /**
  * 获取事件列表
  */
 export async function getEventList(params?: EventListParams): Promise<EventListResponse> {
-  const response = await apiClient.getFullResponse<{
-    items: Event[];
-    pagination: {
-      page: number;
-      pageSize: number;
-      total: number;
-      totalPages: number;
-    };
-  }>('/api/events', params);
+  const response = await apiClient.getFullResponse<PaginationResult<Event>>('/api/events', params);
 
   return {
     items: response.data?.items || [],

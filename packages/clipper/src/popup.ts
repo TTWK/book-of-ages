@@ -2,6 +2,8 @@
  * 岁月史书 Clipper Popup 交互逻辑
  */
 
+import type { WebClipperPayload } from '@book-of-ages/shared';
+
 let currentUrl = '';
 let currentHtml = '';
 let currentSelectedText = '';
@@ -85,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // 传入本地 DOM 快照：保存登录态下用户所见页面（服务端直接抓取是无 cookie 版本）
           ...(currentHtml ? { raw_html: currentHtml } : {}),
           auto_confirm: autoConfirmCheck.checked,
-        }),
+        } satisfies WebClipperPayload),
       });
 
       const result = await response.json();

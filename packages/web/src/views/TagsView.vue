@@ -183,7 +183,7 @@ const parentTagOptions = computed(() => {
     }));
 });
 
-function renderPrefix(option: TreeOption) {
+function renderPrefix({ option }: { option: TreeOption }) {
   const tag = option as unknown as TagTreeNode;
   const color = tag.color;
 
@@ -204,7 +204,7 @@ function renderPrefix(option: TreeOption) {
   ]);
 }
 
-function renderSuffix(option: TreeOption) {
+function renderSuffix({ option }: { option: TreeOption }) {
   const node = option as unknown as TagTreeNode;
   const tag = node.rawTag;
 

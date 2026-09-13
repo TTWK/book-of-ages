@@ -513,11 +513,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-neutral-700 mb-1">上传文件</label>
-          <n-upload
-            :default-upload="false"
-            :file-list="materialForm.file ? [materialForm.file] : []"
-            @change="handleFileChange"
-          >
+          <n-upload :default-upload="false" @change="handleFileChange">
             <n-button>选择文件</n-button>
           </n-upload>
           <p class="text-xs text-neutral-400 mt-2">或提供来源链接：</p>
@@ -561,7 +557,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useMessage } from 'naive-ui';
+import { useMessage, type UploadFileInfo } from 'naive-ui';
 import {
   ArrowLeft,
   Edit2,
@@ -926,8 +922,8 @@ async function deleteTimelineNodeItem(node: TimelineNode) {
 }
 
 // Materials
-function handleFileChange({ file }: { file: File | null }) {
-  materialForm.value.file = file;
+function handleFileChange({ file }: { file: UploadFileInfo }) {
+  materialForm.value.file = (file.file as unknown as File) || null;
 }
 
 function uploadMaterialToNode(node: TimelineNode) {

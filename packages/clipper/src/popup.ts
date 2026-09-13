@@ -82,6 +82,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           url: currentUrl,
           title: titleInput.value.trim() || undefined,
           tags,
+          // 传入本地 DOM 快照：保存登录态下用户所见页面（服务端直接抓取是无 cookie 版本）
+          ...(currentHtml ? { raw_html: currentHtml } : {}),
           auto_confirm: autoConfirmCheck.checked,
         }),
       });

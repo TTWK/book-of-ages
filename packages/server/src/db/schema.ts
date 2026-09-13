@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS events (
     status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'confirmed', 'archived', 'deleted')),
     event_date DATE,
     source_url TEXT,
+    created_by TEXT,
     deleted_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -99,10 +100,12 @@ CREATE TABLE IF NOT EXISTS import_task_items (
 -- ==================== 系统表 ====================
 
 -- 8. api_keys（API 密钥表）
+-- scopes：权限分级（admin=人工 / write=Agent / read=只读），逗号分隔；存量行经默认值升为 admin
 CREATE TABLE IF NOT EXISTS api_keys (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     key_hash TEXT NOT NULL,
+    scopes TEXT NOT NULL DEFAULT 'admin',
     last_used DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -116,6 +119,28 @@ CREATE TABLE IF NOT EXISTS operation_logs (
     entity_type TEXT NOT NULL,
     entity_id TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. app_meta（应用内部元数据：会话签名密钥等）
+CREATE TABLE IF NOT EXISTS app_meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. ai_suggestions（AI 建议收件箱：AI 只提议，人工 accept 后由服务端确定性执行）
+CREATE TABLE IF NOT EXISTS ai_suggestions (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL CHECK(type IN ('tag', 'summary', 'date', 'merge')),
+    target_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    payload TEXT NOT NULL,
+    rationale TEXT,
+    model TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'accepted', 'dismissed')),
+    created_by_key TEXT REFERENCES api_keys(id) ON DELETE SET NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    decided_at DATETIME,
+    decided_by_key TEXT REFERENCES api_keys(id) ON DELETE SET NULL
 );
 
 -- ==================== 全文搜索虚拟表 (FTS5) ====================
@@ -215,4 +240,5 @@ CREATE INDEX IF NOT EXISTS idx_event_tags_event_id ON event_tags(event_id);
 CREATE INDEX IF NOT EXISTS idx_event_tags_tag_id ON event_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_operation_logs_api_key_id ON operation_logs(api_key_id);
 CREATE INDEX IF NOT EXISTS idx_operation_logs_entity ON operation_logs(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_ai_suggestions_target ON ai_suggestions(target_id, type, status);
 `;

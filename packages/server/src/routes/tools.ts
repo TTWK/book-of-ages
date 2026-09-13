@@ -69,13 +69,19 @@ export async function toolRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     try {
-      const result = await executeMcpTool('archive_url', {
-        url,
-        title,
-        tags,
-        raw_html: raw_html,
-        auto_confirm,
-      });
+      // AI 辅助体系（2026-09-13）：write 钥匙恒落草稿；仅 admin 钥匙（人工通道，如剪藏端）可 auto_confirm
+      const allowConfirm = !!request.auth?.scopes.includes('admin');
+      const result = await executeMcpTool(
+        'archive_url',
+        {
+          url,
+          title,
+          tags,
+          raw_html: raw_html,
+          auto_confirm,
+        },
+        { allowConfirm }
+      );
 
       return {
         success: true,

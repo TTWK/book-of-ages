@@ -77,7 +77,7 @@ export async function tagRoutes(fastify: FastifyInstance): Promise<void> {
         const tag = await createTag({ ...input, name: input.name.trim() });
 
         // 记录操作日志
-        await logOperation('CREATE', 'Tag', tag.id, request.apiKeyId);
+        await logOperation('CREATE', 'Tag', tag.id, request.auth?.keyId);
 
         reply.code(201).send({
           success: true,
@@ -188,7 +188,7 @@ export async function tagRoutes(fastify: FastifyInstance): Promise<void> {
       }
 
       // 记录操作日志
-      await logOperation('UPDATE', 'Tag', tag.id, request.apiKeyId);
+      await logOperation('UPDATE', 'Tag', tag.id, request.auth?.keyId);
 
       reply.send({
         success: true,
@@ -260,7 +260,7 @@ export async function tagRoutes(fastify: FastifyInstance): Promise<void> {
       }
 
       // 记录操作日志
-      await logOperation('DELETE', 'Tag', tag.id, request.apiKeyId);
+      await logOperation('DELETE', 'Tag', tag.id, request.auth?.keyId);
 
       reply.send({
         success: true,

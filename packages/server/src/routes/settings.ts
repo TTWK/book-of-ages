@@ -5,23 +5,25 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { createAPIKey, listAPIKeys, deleteAPIKey } from '../services/apiKeyService';
 import { getOperationLogs } from '../services/operationLogService';
-import { bootstrapAuthMiddleware } from '../middleware/auth';
+import { bootstrapAuthMiddleware, requireAdminScope } from '../middleware/auth';
 import type { CreateAPIKeyInput } from '@book-of-ages/shared';
 
 export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
-  // 获取 API Key 列表
-  fastify.get('/api/settings/keys', async (request: FastifyRequest, reply: FastifyReply) => {
-    const keys = await listAPIKeys();
+  // 获取 API Key 列表（仅 admin）
+  fastify.get(
+    '/api/settings/keys',
+    { preHandler: requireAdminScope },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const keys = await listAPIKeys();
 
-    reply.send({
-      success: true,
-      data: keys,
-    });
-  });
+      reply.send({
+        success: true,
+        data: keys,
+      });
+    }
+  );
 
-  // 创建新的 API Key
-  // 鉴权策略：常规请求强制携带密钥；未配置 ADMIN_API_KEY 且系统中还没有
-  // 任何密钥时，允许匿名创建第一把密钥（首次引导）
+  // 创建新的 API Key（仅 admin；首次引导见 bootstrapAuthMiddleware）
   fastify.post<{
     Body: CreateAPIKeyInput;
   }>(
@@ -34,6 +36,11 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
           required: ['name'],
           properties: {
             name: { type: 'string', maxLength: 100 },
+            scopes: {
+              type: 'array',
+              items: { type: 'string', enum: ['admin', 'write', 'read'] },
+              maxItems: 3,
+            },
           },
         },
       },
@@ -76,9 +83,10 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
-  // 删除 API Key
-  fastify.delete(
+  // 删除 API Key（仅 admin）
+  fastify.delete<{ Params: { id: string } }>(
     '/api/settings/keys/:id',
+    { preHandler: requireAdminScope },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const success = await deleteAPIKey(request.params.id);
 
@@ -100,10 +108,11 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
-  // 获取操作审计日志
-  fastify.get(
+  // 获取操作审计日志（仅 admin）
+  fastify.get<{ Querystring: { limit?: number } }>(
     '/api/audit/logs',
     {
+      preHandler: requireAdminScope,
       schema: {
         querystring: {
           type: 'object',

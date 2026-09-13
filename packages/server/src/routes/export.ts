@@ -3,14 +3,16 @@
  */
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { requireAdminScope } from '../middleware/auth';
 import { exportEventToMarkdown } from '../services/exportService';
 import { exportEventsToMarkdown } from '../services/batchExportService';
 import type { BatchExportInput } from '@book-of-ages/shared';
 
 export async function exportRoutes(fastify: FastifyInstance): Promise<void> {
   // 导出单个事件为 Markdown
-  fastify.get(
+  fastify.get<{ Params: { id: string } }>(
     '/api/events/:id/export',
+    { preHandler: requireAdminScope },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const id = request.params.id;
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -42,9 +44,10 @@ export async function exportRoutes(fastify: FastifyInstance): Promise<void> {
   );
 
   // 批量导出事件为 Markdown 列表
-  fastify.post(
+  fastify.post<{ Body: BatchExportInput }>(
     '/api/events/batch-export',
     {
+      preHandler: requireAdminScope,
       schema: {
         body: {
           type: 'object',

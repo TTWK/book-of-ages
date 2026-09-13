@@ -195,13 +195,16 @@ export async function processImportTask(taskId: string): Promise<void> {
       });
 
       // 2. 创建草稿事件 (Inbox)
-      const event = await createEvent({
-        title: snapshot.title || item.title || item.source_url,
-        summary: snapshot.excerpt || undefined,
-        content: snapshot.markdownContent,
-        source_url: item.source_url,
-        status: 'draft',
-      });
+      const event = await createEvent(
+        {
+          title: snapshot.title || item.title || item.source_url,
+          summary: snapshot.excerpt || undefined,
+          content: snapshot.markdownContent,
+          source_url: item.source_url,
+          status: 'draft',
+        },
+        { createdBy: 'import' }
+      );
 
       // 3. 关联证据快照素材
       await createMaterial({

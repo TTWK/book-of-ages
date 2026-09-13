@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import { initDatabase, closeDatabase } from './db';
-import { authPlugin, optionalAuthMiddleware, enforceAuthOnMutations } from './middleware/auth';
+import { authPlugin, optionalAuthMiddleware, enforceAuthOnAllRoutes } from './middleware/auth';
 import { recoverStaleImportTasks } from './services/importService';
 import { eventRoutes } from './routes/events';
 import { timelineRoutes } from './routes/timeline';
@@ -15,6 +15,8 @@ import { toolRoutes } from './routes/tools';
 import { searchRoutes } from './routes/search';
 import { settingsRoutes } from './routes/settings';
 import { importRoutes } from './routes/imports';
+import { authRoutes } from './routes/auth';
+import { suggestionRoutes } from './routes/suggestions';
 
 const fastify = Fastify({ logger: true });
 
@@ -37,11 +39,12 @@ fastify.register(multipart, {
   },
 });
 
-// 全局认证中间件（可选认证：标记合法密钥，供审计与权限判断使用）
+// 全局认证中间件（可选认证：标记合法密钥——header 或会话 cookie，供 scope 检查使用）
 fastify.addHook('preHandler', optionalAuthMiddleware);
 
-// 写操作（非 GET/HEAD/OPTIONS）自动强制 API Key 鉴权（须在路由注册前挂载）
-enforceAuthOnMutations(fastify);
+// 所有 /api 路由一律鉴权（2026-09-13 设计）：GET → read scope，非 GET → write scope；
+// 管理端点显式挂 requireAdminScope（须在路由注册前挂载）
+enforceAuthOnAllRoutes(fastify);
 
 // 健康检查
 fastify.get('/', async () => {
@@ -63,6 +66,8 @@ fastify.register(toolRoutes);
 fastify.register(searchRoutes);
 fastify.register(settingsRoutes);
 fastify.register(importRoutes);
+fastify.register(authRoutes);
+fastify.register(suggestionRoutes);
 
 const start = async () => {
   const port = parseInt(process.env.PORT || '3000', 10);

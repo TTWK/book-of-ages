@@ -11,6 +11,12 @@ export interface Event {
   event_date?: string;
   source_url?: string;
   tags?: Tag[];
+  /** 溯源：创建者标识（'web' / 'mcp' / api_key id） */
+  created_by?: string;
+  /** 溯源展示（服务端 JOIN api_keys 得出）：钥匙名 */
+  created_by_name?: string;
+  /** 溯源展示：创建者钥匙的 scope（原始逗号串） */
+  created_by_scope?: string;
   deleted_at?: string;
   created_at: string;
   updated_at: string;
@@ -146,10 +152,19 @@ export interface UpdateTagInput {
 
 // ==================== API 密钥 (API Keys) ====================
 
+/**
+ * 钥匙权限分级（2026-09-13 AI 辅助体系设计）：
+ * - admin：人工钥匙（浏览器"本站访问密钥"），全权，含 confirmed 核心字段修改与状态流转
+ * - write：Agent 钥匙，可增删改（创建强制 draft，confirmed 锁定，不可状态流转）
+ * - read：只读钥匙
+ */
+export type APIKeyScope = 'admin' | 'write' | 'read';
+
 export interface APIKey {
   id: string;
   name: string;
   key_hash: string;
+  scopes: APIKeyScope[];
   last_used?: string;
   created_at: string;
   updated_at: string;
@@ -157,6 +172,8 @@ export interface APIKey {
 
 export interface CreateAPIKeyInput {
   name: string;
+  /** 默认 ['write']（面向 Agent）；人工浏览器钥匙选 ['admin'] */
+  scopes?: APIKeyScope[];
 }
 
 export interface APIKeyWithPlain extends APIKey {
@@ -172,7 +189,8 @@ export type OperationEntityType =
   | 'TimelineNode'
   | 'Tag'
   | 'APIKey'
-  | 'ImportTask';
+  | 'ImportTask'
+  | 'AISuggestion';
 
 export interface OperationLog {
   id: string;
@@ -312,4 +330,73 @@ export interface TagAggregationEvent {
 export interface TagAggregationResult {
   tag: Tag;
   events: TagAggregationEvent[];
+}
+
+// ==================== AI 建议 (AI Suggestions) ====================
+
+/**
+ * AI 建议收件箱：AI 只提议、不落库生效；accept 由人工（admin 钥匙）触发，
+ * 服务端以确定性代码执行建议内容。
+ */
+export type AISuggestionType = 'tag' | 'summary' | 'date' | 'merge';
+export type AISuggestionStatus = 'pending' | 'accepted' | 'dismissed';
+
+export interface AISuggestionPayload {
+  /** type=tag：建议追加的标签名 */
+  tag_names?: string[];
+  /** type=summary：建议的摘要文本 */
+  summary?: string;
+  /** type=date：建议的事件日期（YYYY-MM-DD） */
+  event_date?: string;
+  /** type=merge：疑似重复的目标事件 id */
+  merge_into_event_id?: string;
+}
+
+export interface AISuggestion {
+  id: string;
+  type: AISuggestionType;
+  target_id: string;
+  payload: AISuggestionPayload;
+  rationale?: string;
+  model?: string;
+  status: AISuggestionStatus;
+  created_by_key?: string;
+  created_at: string;
+  decided_at?: string;
+  decided_by_key?: string;
+}
+
+export interface ProposeSuggestionInput {
+  type: AISuggestionType;
+  target_id: string;
+  payload: AISuggestionPayload;
+  rationale?: string;
+  model?: string;
+}
+
+// ==================== 结构化查询 (Structured Query) ====================
+
+/**
+ * 确定性结构化查询：由自然语言经 AI（外部 Agent 或可选服务端桥）翻译而来，
+ * 服务端只执行查询计划，绝不接受 LLM 产出的 SQL。
+ * 语义说明：tags 为"任一匹配"；status 采用与事件列表相同的回收站语义。
+ */
+export interface StructuredQuery {
+  /** 全文检索词组（服务端做 FTS 引号转义） */
+  text?: string;
+  /** 标签名过滤（任一匹配） */
+  tags?: string[];
+  date_from?: string;
+  date_to?: string;
+  status?: EventStatus;
+  /** 返回哪些结果面，默认全部 */
+  fields?: ('events' | 'materials' | 'timeline_nodes')[];
+  sort?: 'relevance' | 'date_desc' | 'date_asc';
+  limit?: number;
+}
+
+export interface StructuredSearchResult {
+  events: Event[];
+  materials: Material[];
+  timelineNodes: TimelineNode[];
 }

@@ -100,6 +100,10 @@ export function initDatabase(): Promise<Database> {
         db!.run('ALTER TABLE materials ADD COLUMN snapshot_html_path TEXT', () => {});
         db!.run('ALTER TABLE materials ADD COLUMN file_hash TEXT', () => {});
         db!.run('ALTER TABLE materials ADD COLUMN file_size INTEGER', () => {});
+        // AI 辅助体系（2026-09-13）：钥匙权限分级与内容溯源
+        // 存量钥匙经 DEFAULT 'admin' 保持能力不缩水；新钥匙由创建方显式指定
+        db!.run("ALTER TABLE api_keys ADD COLUMN scopes TEXT NOT NULL DEFAULT 'admin'", () => {});
+        db!.run('ALTER TABLE events ADD COLUMN created_by TEXT', () => {});
 
         // 播种管理员引导行：ADMIN_API_KEY 环境变量鉴权成功后以 'admin' 身份
         // 记录审计日志，需要该行满足 operation_logs 的外键约束

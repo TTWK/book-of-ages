@@ -93,8 +93,16 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         });
         return;
       }
-      const event = await createEvent(input);
-      await logOperation('CREATE', 'Event', event.id, request.apiKeyId);
+
+      // AI 辅助体系（2026-09-13）：非 admin 钥匙（write Agent）创建一律落草稿，
+      // confirmed 只能由人工（admin 钥匙）设置
+      const isAdmin = !!request.auth?.scopes.includes('admin');
+      if (!isAdmin) {
+        input.status = 'draft';
+      }
+
+      const event = await createEvent(input, { createdBy: request.auth?.keyId ?? 'web' });
+      await logOperation('CREATE', 'Event', event.id, request.auth?.keyId);
       reply.code(201).send({ success: true, data: event });
     }
   );
@@ -126,7 +134,7 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
       reply: FastifyReply
     ) => {
       const { ids, updates } = request.body;
-      const result = await batchUpdateEvents(ids, updates, request.apiKeyId);
+      const result = await batchUpdateEvents(ids, updates, { scopes: request.auth?.scopes });
 
       // 批量记录操作日志（单事务）
       await logOperations(
@@ -134,7 +142,7 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
           action: 'UPDATE' as const,
           entity_type: 'Event' as const,
           entity_id: id,
-          api_key_id: request.apiKeyId,
+          api_key_id: request.auth?.keyId,
         }))
       );
 
@@ -154,7 +162,7 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         });
         return;
       }
-      await logOperation('UPDATE', 'Event', restored.id, request.apiKeyId);
+      await logOperation('UPDATE', 'Event', restored.id, request.auth?.keyId);
       reply.send({ success: true, data: restored });
     }
   );
@@ -219,7 +227,9 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         return;
       }
       try {
-        const updatedEvent = await updateEvent(request.params.id, request.body, request.apiKeyId);
+        const updatedEvent = await updateEvent(request.params.id, request.body, {
+          scopes: request.auth?.scopes,
+        });
         if (!updatedEvent) {
           reply.code(500).send({
             success: false,
@@ -227,11 +237,7 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
           });
           return;
         }
-        if (request.apiKeyId) {
-          await logOperation('UPDATE', 'Event', event.id, request.apiKeyId);
-        } else {
-          await logOperation('UPDATE', 'Event', event.id);
-        }
+        await logOperation('UPDATE', 'Event', event.id, request.auth?.keyId);
         reply.send({ success: true, data: updatedEvent });
       } catch (error) {
         if (error instanceof Error && error.message.startsWith('PERMISSION_DENIED')) {
@@ -269,8 +275,8 @@ export async function eventRoutes(fastify: FastifyInstance): Promise<void> {
         });
         return;
       }
-      if (request.apiKeyId) {
-        await logOperation('DELETE', 'Event', event.id, request.apiKeyId);
+      if (request.auth?.keyId) {
+        await logOperation('DELETE', 'Event', event.id, request.auth.keyId);
       } else {
         await logOperation('DELETE', 'Event', event.id);
       }

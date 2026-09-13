@@ -181,12 +181,28 @@ describe('eventService', () => {
       expect(updated!.content).toBe('新内容');
     });
 
-    it('should update status', async () => {
+    it('should update status with admin scope', async () => {
       const event = await createEvent({ title: '草稿事件', status: 'draft' });
-      const updated = await updateEvent(event.id, { status: 'confirmed' });
+      const updated = await updateEvent(event.id, { status: 'confirmed' }, { scopes: ['admin'] });
 
       expect(updated).not.toBeNull();
       expect(updated!.status).toBe('confirmed');
+    });
+
+    it('should reject status transition without admin scope', async () => {
+      const event = await createEvent({ title: '草稿事件', status: 'draft' });
+
+      await expect(
+        updateEvent(event.id, { status: 'confirmed' }, { scopes: ['write'] })
+      ).rejects.toThrow('PERMISSION_DENIED');
+    });
+
+    it('should allow soft delete status without admin scope', async () => {
+      const event = await createEvent({ title: '待删除事件', status: 'draft' });
+      const updated = await updateEvent(event.id, { status: 'deleted' }, { scopes: ['write'] });
+
+      expect(updated).not.toBeNull();
+      expect(updated!.status).toBe('deleted');
     });
 
     it('should update event_date and source_url', async () => {
@@ -226,7 +242,7 @@ describe('eventService', () => {
       });
 
       await expect(
-        updateEvent(event.id, { title: '被篡改的标题' }, 'some-api-key-id')
+        updateEvent(event.id, { title: '被篡改的标题' }, { scopes: ['write'] })
       ).rejects.toThrow('PERMISSION_DENIED');
     });
 
@@ -238,7 +254,7 @@ describe('eventService', () => {
       });
 
       await expect(
-        updateEvent(event.id, { summary: '被篡改的摘要' }, 'some-api-key-id')
+        updateEvent(event.id, { summary: '被篡改的摘要' }, { scopes: ['write'] })
       ).rejects.toThrow('PERMISSION_DENIED');
     });
 
@@ -250,34 +266,32 @@ describe('eventService', () => {
       });
 
       await expect(
-        updateEvent(event.id, { content: '被篡改的内容' }, 'some-api-key-id')
+        updateEvent(event.id, { content: '被篡改的内容' }, { scopes: ['write'] })
       ).rejects.toThrow('PERMISSION_DENIED');
     });
 
-    it('should allow UI to modify confirmed event (no apiKeyId)', async () => {
+    it('should allow admin (human browser) to modify confirmed event', async () => {
       const event = await createEvent({
         title: '已确认事件',
         status: 'confirmed',
       });
 
-      const updated = await updateEvent(event.id, { title: '新标题' }, undefined);
+      const updated = await updateEvent(event.id, { title: '新标题' }, { scopes: ['admin'] });
 
       expect(updated).not.toBeNull();
       expect(updated!.title).toBe('新标题');
     });
 
-    it('should allow agent to modify non-core fields of confirmed event', async () => {
+    it('should reject agent from transitioning status of confirmed event', async () => {
       const event = await createEvent({
         title: '已确认事件',
         status: 'confirmed',
       });
 
-      // 假设 status 不是核心字段（实际上核心字段是 title, summary, content, event_date, source_url）
-      // 这里测试更新 status 应该被允许
-      const updated = await updateEvent(event.id, { status: 'draft' }, 'some-api-key-id');
-
-      expect(updated).not.toBeNull();
-      expect(updated!.status).toBe('draft');
+      // 状态流转仅 admin：write 钥匙不能把已收录事件退回草稿
+      await expect(
+        updateEvent(event.id, { status: 'draft' }, { scopes: ['write'] })
+      ).rejects.toThrow('PERMISSION_DENIED');
     });
 
     it('should throw PERMISSION_DENIED with correct message', async () => {
@@ -288,7 +302,7 @@ describe('eventService', () => {
       });
 
       try {
-        await updateEvent(event.id, { event_date: '2026-04-12' }, 'api-key-id');
+        await updateEvent(event.id, { event_date: '2026-04-12' }, { scopes: ['write'] });
         throw new Error('Should have thrown');
       } catch (error: unknown) {
         const err = error as Error;

@@ -169,7 +169,7 @@ export async function materialRoutes(fastify: FastifyInstance): Promise<void> {
       file_path: filePath,
     });
 
-    await logOperation('CREATE', 'Material', material.id, request.apiKeyId);
+    await logOperation('CREATE', 'Material', material.id, request.auth?.keyId);
     reply.code(201).send({ success: true, data: material });
   });
 
@@ -261,7 +261,7 @@ export async function materialRoutes(fastify: FastifyInstance): Promise<void> {
         return;
       }
       const updatedMaterial = await updateMaterial(request.params.id, request.body);
-      await logOperation('UPDATE', 'Material', material.id, request.apiKeyId);
+      await logOperation('UPDATE', 'Material', material.id, request.auth?.keyId);
       reply.send({ success: true, data: updatedMaterial });
     }
   );
@@ -282,7 +282,7 @@ export async function materialRoutes(fastify: FastifyInstance): Promise<void> {
         deleteFile(material.file_path);
       }
       await deleteMaterial(request.params.id);
-      await logOperation('DELETE', 'Material', material.id, request.apiKeyId);
+      await logOperation('DELETE', 'Material', material.id, request.auth?.keyId);
       reply.send({ success: true, data: null });
     }
   );

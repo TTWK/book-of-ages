@@ -3,6 +3,7 @@
  */
 
 import { FastifyPluginAsync } from 'fastify';
+import { requireAdminScope } from '../middleware/auth';
 import { createImportTask, getImportTasks, getImportTaskDetail } from '../services/importService';
 import type { CreateImportTaskInput, ImportType } from '@book-of-ages/shared';
 
@@ -12,7 +13,7 @@ export const importRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.post<{
     Body: CreateImportTaskInput;
-  }>('/api/imports', async (request, reply) => {
+  }>('/api/imports', { preHandler: requireAdminScope }, async (request, reply) => {
     // 支持 multipart 文件上传或 JSON body
     if (request.isMultipart()) {
       const data = await request.file();
@@ -52,7 +53,7 @@ export const importRoutes: FastifyPluginAsync = async (fastify) => {
   /**
    * GET /api/imports - 获取导入任务列表
    */
-  fastify.get('/api/imports', async () => {
+  fastify.get('/api/imports', { preHandler: requireAdminScope }, async () => {
     const tasks = await getImportTasks(50);
     return { success: true, data: tasks };
   });
@@ -62,7 +63,7 @@ export const importRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.get<{
     Params: { id: string };
-  }>('/api/imports/:id', async (request, reply) => {
+  }>('/api/imports/:id', { preHandler: requireAdminScope }, async (request, reply) => {
     const detail = await getImportTaskDetail(request.params.id);
     if (!detail) {
       return reply.status(404).send({

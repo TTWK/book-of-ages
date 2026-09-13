@@ -11,6 +11,7 @@ import type {
   CreateEventInput,
   UpdateEventInput,
   EventStatus,
+  APIKeyScope,
 } from '@book-of-ages/shared';
 
 /**
@@ -26,16 +27,20 @@ function normalizeEventDate(date: string | null | undefined): string | null {
 
 /**
  * 创建事件
+ * @param opts.createdBy 溯源标识：api_key id / 'web' / 'mcp'
  */
-export async function createEvent(input: CreateEventInput): Promise<Event> {
+export async function createEvent(
+  input: CreateEventInput,
+  opts?: { createdBy?: string }
+): Promise<Event> {
   const id = uuidv4();
   const now = new Date().toISOString();
   const status = input.status || 'draft';
 
   await run(
     `
-    INSERT INTO events (id, title, summary, content, status, event_date, source_url, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO events (id, title, summary, content, status, event_date, source_url, created_by, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
     [
       id,
@@ -45,6 +50,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
       status,
       normalizeEventDate(input.event_date),
       input.source_url || null,
+      opts?.createdBy ?? null,
       now,
       now,
     ]
@@ -143,12 +149,15 @@ export async function listEvents(options?: {
 }
 
 /**
- * 根据 ID 获取事件
+ * 根据 ID 获取事件（JOIN api_keys 带出溯源展示信息）
  */
 export async function getEventById(id: string): Promise<Event | null> {
-  const result = await get<Event>(
+  const result = await get<Event & { created_by_scope?: string; created_by_name?: string }>(
     `
-    SELECT * FROM events WHERE id = ? AND deleted_at IS NULL
+    SELECT e.*, k.name AS created_by_name, k.scopes AS created_by_scope
+    FROM events e
+    LEFT JOIN api_keys k ON k.id = e.created_by
+    WHERE e.id = ? AND e.deleted_at IS NULL
   `,
     [id]
   );
@@ -163,19 +172,27 @@ export async function getEventById(id: string): Promise<Event | null> {
 /**
  * 更新事件
  * 约定：字段传 null 表示清空（写入 NULL），undefined 表示不修改
+ *
+ * scope 规则（2026-09-13 设计）：
+ * - 非 admin（write Agent）：
+ *   - confirmed 事件核心字段锁定（原不可篡改规则）
+ *   - 状态只允许软删除（status='deleted'）；draft→confirmed→archived 等流转仅 admin
+ * - admin（人工钥匙）：全权
  */
 export async function updateEvent(
   id: string,
   input: UpdateEventInput,
-  apiKeyId?: string
+  opts?: { scopes?: APIKeyScope[] }
 ): Promise<Event | null> {
   const existingEvent = await getEventById(id);
   if (!existingEvent) {
     return null;
   }
 
-  // 如果事件已确认，且有 API Key 调用（Agent），禁止修改核心字段
-  if (existingEvent.status === 'confirmed' && apiKeyId) {
+  const isAdmin = !!opts?.scopes?.includes('admin');
+
+  // 已收录事件的核心字段仅 admin（人工）可修改
+  if (existingEvent.status === 'confirmed' && !isAdmin) {
     const restrictedFields = ['title', 'summary', 'content', 'event_date', 'source_url'];
     const hasRestrictedUpdate = restrictedFields.some(
       (field) => input[field as keyof UpdateEventInput] !== undefined
@@ -184,6 +201,11 @@ export async function updateEvent(
     if (hasRestrictedUpdate) {
       throw new Error('PERMISSION_DENIED: 已收录事件的核心字段不允许通过 API 修改');
     }
+  }
+
+  // 状态流转仅 admin；write 钥匙只允许软删除（恢复走 restore 端点）
+  if (!isAdmin && input.status !== undefined && input.status !== 'deleted') {
+    throw new Error('PERMISSION_DENIED: 状态流转（收录/归档/恢复）仅允许 admin 权限钥匙执行');
   }
 
   const now = new Date().toISOString();
@@ -241,7 +263,12 @@ export async function updateEvent(
     values
   );
 
-  return getEventById(id);
+  // 回读时不过滤 deleted_at：软删除（status='deleted'）本身是本函数支持的合法更新结果
+  const updatedRow = await get<Event>(`SELECT * FROM events WHERE id = ?`, [id]);
+  if (updatedRow) {
+    updatedRow.tags = await getEventTags(id);
+  }
+  return updatedRow || null;
 }
 
 /**
@@ -289,10 +316,13 @@ export async function deleteEvent(id: string): Promise<boolean> {
 }
 
 /**
- * 批量创建事件（用于 Agent 推送）
+ * 批量创建事件（用于 Agent 推送与导入）
  * 使用事务保证原子性
  */
-export async function batchCreateEvents(inputs: CreateEventInput[]): Promise<Event[]> {
+export async function batchCreateEvents(
+  inputs: CreateEventInput[],
+  opts?: { createdBy?: string }
+): Promise<Event[]> {
   const now = new Date().toISOString();
   const queries: Array<{ sql: string; params: unknown[] }> = [];
   const ids: string[] = [];
@@ -303,8 +333,8 @@ export async function batchCreateEvents(inputs: CreateEventInput[]): Promise<Eve
     ids.push(id);
     queries.push({
       sql: `
-        INSERT INTO events (id, title, summary, content, status, event_date, source_url, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO events (id, title, summary, content, status, event_date, source_url, created_by, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       params: [
         id,
@@ -314,6 +344,7 @@ export async function batchCreateEvents(inputs: CreateEventInput[]): Promise<Eve
         status,
         normalizeEventDate(input.event_date),
         input.source_url || null,
+        opts?.createdBy ?? null,
         now,
         now,
       ],
@@ -346,14 +377,14 @@ export async function batchCreateEvents(inputs: CreateEventInput[]): Promise<Eve
 export async function batchUpdateEvents(
   ids: string[],
   input: UpdateEventInput,
-  apiKeyId?: string
+  opts?: { scopes?: APIKeyScope[] }
 ): Promise<{ successIds: string[]; failedIds: string[] }> {
   const successIds: string[] = [];
   const failedIds: string[] = [];
 
   for (const id of ids) {
     try {
-      const updated = await updateEvent(id, input, apiKeyId);
+      const updated = await updateEvent(id, input, opts);
       if (updated) {
         successIds.push(id);
       } else {

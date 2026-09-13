@@ -81,7 +81,7 @@ export async function timelineRoutes(fastify: FastifyInstance): Promise<void> {
         return;
       }
       const node = await createTimelineNode(event_id, input);
-      await logOperation('CREATE', 'TimelineNode', node.id, request.apiKeyId);
+      await logOperation('CREATE', 'TimelineNode', node.id, request.auth?.keyId);
       reply.code(201).send({ success: true, data: node });
     }
   );
@@ -118,7 +118,7 @@ export async function timelineRoutes(fastify: FastifyInstance): Promise<void> {
         return;
       }
       const updatedNode = await updateTimelineNode(request.params.nodeId, request.body);
-      await logOperation('UPDATE', 'TimelineNode', node.id, request.apiKeyId);
+      await logOperation('UPDATE', 'TimelineNode', node.id, request.auth?.keyId);
       reply.send({ success: true, data: updatedNode });
     }
   );
@@ -136,7 +136,7 @@ export async function timelineRoutes(fastify: FastifyInstance): Promise<void> {
         return;
       }
       await deleteTimelineNode(request.params.nodeId);
-      await logOperation('DELETE', 'TimelineNode', node.id, request.apiKeyId);
+      await logOperation('DELETE', 'TimelineNode', node.id, request.auth?.keyId);
       reply.send({ success: true, data: null });
     }
   );

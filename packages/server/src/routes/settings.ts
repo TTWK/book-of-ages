@@ -60,7 +60,7 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       }
 
       try {
-        const apiKey = await createAPIKey({ name: name.trim() });
+        const apiKey = await createAPIKey({ name: name.trim(), scopes: request.body.scopes });
 
         reply.code(201).send({
           success: true,

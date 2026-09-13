@@ -164,7 +164,8 @@ export function requireScope(min: Scope) {
       return;
     }
 
-    if (rank > SCOPE_RANK.read && auth.source === 'cookie') {
+    // cookie 限制按"所需权限级别"判定：read 级别请求 cookie 可用；write 及以上仅认 header
+    if (SCOPE_RANK[min] > SCOPE_RANK.read && auth.source === 'cookie') {
       forbidden(reply, '会话 Cookie 仅用于读请求：写操作请通过 X-API-Key 请求头完成鉴权');
       return;
     }
@@ -227,13 +228,16 @@ export async function bootstrapAuthMiddleware(
 const SCOPE_RANK: Record<Scope, number> = { read: 1, write: 2, admin: 3 };
 
 /**
- * 为所有路由自动挂载 scope 检查：
+ * 为所有 /api 路由自动挂载 scope 检查：
  * - GET/HEAD/OPTIONS → read（header 或 cookie）
  * - 其余 → write（仅 header）
- * 已显式指定 preHandler 的路由（如首密钥引导、管理端点）不覆盖
+ * 已显式指定 preHandler 的路由（如首密钥引导、管理端点）不覆盖；
+ * 非 /api 路由（根路径、/health 健康检查）保持开放，供部署探针使用
  */
 export function enforceAuthOnAllRoutes(fastify: FastifyInstance): void {
   fastify.addHook('onRoute', (routeOptions) => {
+    const url = routeOptions.url ?? '';
+    if (!url.startsWith('/api')) return;
     if (routeOptions.preHandler) return;
     const methods = Array.isArray(routeOptions.method)
       ? routeOptions.method
